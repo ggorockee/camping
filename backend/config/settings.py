@@ -19,6 +19,7 @@ env = environ.Env(
     # set casting, default value
     DEBUG=(bool, False),
     DJANGO_ALLOWED_HOSTS=(str, ""),
+    SECRET_KEY=(str, "django-insecure-temporary-key-for-build-only"),
 )
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -29,7 +30,7 @@ environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = env("SECRET_KEY", default="django-insecure-temporary-key-for-build-only")
+SECRET_KEY = env("SECRET_KEY")
 
 
 # SECURITY WARNING: don't run with debug turned on in production!
