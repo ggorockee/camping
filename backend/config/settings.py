@@ -307,3 +307,7 @@ if env("ENABLE_ACCESS_LOG"):
             "level": "DEBUG" if DEBUG else "INFO",
         },
     }
+
+
+CH_IMAGE_URL = env("CH_IMAGE_URL")
+CLOUDFLARE_API_TOKEN = env("CLOUDFLARE_API_TOKEN")

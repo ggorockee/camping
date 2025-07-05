@@ -1,4 +1,11 @@
+from django.conf import settings
+
 from rest_framework import viewsets, permissions
+from rest_framework.views import APIView
+from rest_framework.response import Response
+
+
+import requests
 
 from common import permissions as common_perm
 from . import models, serializers
@@ -34,3 +41,29 @@ class CampsiteViewSet(viewsets.ModelViewSet):
         create 요청 시, 현재 로그인된 사용자를 자동으로 owner로 설정.
         """
         serializer.save(owner=self.request.user)
+
+
+class ImageUploadURLView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        url = f"https://api.cloudflare.com/client/v4/accounts/{settings.CLOUDFLARE_ACCOUNT_ID}/images/v2/direct_upload"
+        # 인증 헤더
+        headers = {
+            "Authorization": f"Bearer {settings.CLOUDFLARE_API_TOKEN}",
+        }
+
+        try:
+            # Cloudflare에 일회용 업로드 URL 요청
+            response = requests.post(url, headers=headers)
+            response.raise_for_status()  # HTTP 에러가 발생하면 예외를 발생시킴
+
+            data = response.json()
+
+            if data.get("success"):
+                # 프론트엔드에 필요한 정보만 담아 전달
+                return Response(data["result"])
+            else:
+                return Response({"errors": data.get("errors")}, status=400)
+        except requests.exceptions.RequestException as e:
+            return Response({"error": str(e)}, status=500)

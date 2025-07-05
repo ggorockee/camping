@@ -21,8 +21,8 @@ class CampsiteImage(BaseModel):
     campsite = models.ForeignKey(
         Campsite, on_delete=models.CASCADE, related_name="images"
     )
-    image_url = models.URLField()
-    order = models.PositiveIntegerField(default=0)  # 이미지 순서
+    cloudflare_id = models.CharField(max_length=255)
+    order = models.PositiveIntegerField(default=0)
 
 
 class Site(BaseModel):
