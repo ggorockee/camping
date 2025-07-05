@@ -22,6 +22,7 @@ env = environ.Env(
     SECRET_KEY=(str, "django-insecure-temporary-key-for-build-only"),
     IN_DOCKER_BUILD=(bool, False),
     ENABLE_ACCESS_LOG=(bool, False),
+    PAGE_SIZE=(int, 10),
 )
 
 IN_DOCKER_BUILD = env("IN_DOCKER_BUILD")
@@ -185,6 +186,12 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticatedOrReadOnly",
     ],
+    # 기본 필터 백엔드 설정 (검색, 필터링 기능을 위함)
+    "DEFAULT_FILTER_BACKENDS": ["django_filters.rest_framework.DjangoFilterBackend"],
+    # 기본 페이지네이션 클래스 설정
+    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    # 페이지 당 기본 데이터 개수
+    "PAGE_SIZE": env("PAGE_SIZE"),
 }
 
 SIMPLE_JWT = {
