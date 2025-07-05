@@ -219,6 +219,16 @@ SIMPLE_JWT = {
 
 APPEND_SLASH = True
 CORS_ALLOW_CREDENTIALS = True
+CSRF_TRUSTED_ORIGINS = [
+    "https://camping-api.ggorockee.com",
+    "http://camping-api.ggorockee.com",
+]
+
+USE_X_FORWARDED_HOST = True
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+# SESSION_COOKIE_SECURE = True
+# CSRF_COOKIE_SECURE = True
 
 if DEBUG:
     # 개발 환경에서는 localhost:3000만 허용
