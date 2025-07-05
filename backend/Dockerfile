@@ -26,6 +26,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # .dockerignore 파일에 명시된 파일들은 복사에서 제외.
 COPY . .
 
+ENV IN_DOCKER_BUILD=true
+
 RUN python manage.py collectstatic --noinput
 
 # --- 7. 포트 노출 (Expose Port) ---
