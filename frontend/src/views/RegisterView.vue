@@ -1,5 +1,9 @@
 <script setup>
 import { reactive } from "vue";
+import apiClient from "@/api/index.js";
+import { useRouter } from "vue-router";
+
+const router = useRouter(); // 페이지 이동을 위해 router 인스턴스 생성
 
 // Reactive object to manage form data via v-model
 const form = reactive({
@@ -10,19 +14,31 @@ const form = reactive({
 });
 
 // Function to be executed on form submission
-function submitForm() {
+async function submitForm() {
   // 1. Check if the passwords match
   if (form.password !== form.passwordConfirm) {
     alert("Passwords do not match.");
     return; // Stop the function execution
   }
 
-  // 2. Send the data to the server (API call)
-  // You would add your API call logic here using axios or fetch.
-  console.log("Form data to be submitted:", form);
-  alert(
-    "Registration form submitted. (In a real app, an API call would be made)"
-  );
+  // API로 보낼 데이터에서 passwordConfirm 필드 제외
+  const { passwordConfirm, ...payload } = form;
+
+  try {
+    // 2. Django API로 회원가입 요청
+    await apiClient.post("/users/register/", payload);
+    alert("Welcome! Your registration was successful.");
+    // 3. 성공 시 로그인 페이지로 이동
+    router.push("/users/login");
+  } catch (error) {
+    console.error("Registration failed:", error.response);
+    if (error.response && error.response.data) {
+      // Django에서 보낸 유효성 검사 에러 메시지를 alert으로 표시
+      alert(`Registration failed: ${JSON.stringify(error.response.data)}`);
+    } else {
+      alert("An unexpected error occurred. Please try again.");
+    }
+  }
 }
 </script>
 
