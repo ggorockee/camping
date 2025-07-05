@@ -90,6 +90,14 @@ class User(AbstractBaseUser, PermissionsMixin):
         _("email address"),
         unique=True,
     )
+    phone_number = models.CharField(
+        max_length=15,
+        blank=True,
+    )
+    points = models.PositiveIntegerField(
+        default=0,
+    )
+
     is_staff = models.BooleanField(
         _("staff status"),
         default=False,

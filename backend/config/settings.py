@@ -65,6 +65,9 @@ THIRD_PART_APPS = [
 
 CUSTOM_APPS = [
     "users.apps.UsersConfig",
+    "common.apps.CommonConfig",
+    "campsites.apps.CampsitesConfig",
+    "communities.apps.CommunitiesConfig",
 ]
 
 INSTALLED_APPS = SYSTEM_APPS + THIRD_PART_APPS + CUSTOM_APPS
@@ -179,16 +182,20 @@ REST_FRAMEWORK = {
     ),
     # Note: Other settings like 'DEFAULT_PERMISSION_CLASSES' can remain as they are.
     # For example:
-    # 'DEFAULT_PERMISSION_CLASSES': [
-    #     'rest_framework.permissions.IsAuthenticated',
-    # ]
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticatedOrReadOnly",
+    ],
 }
 
 SIMPLE_JWT = {
     # Set the lifespan of the access token.
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),  # Example: 1 hour
+    "ACCESS_TOKEN_LIFETIME": (
+        timedelta(minutes=60) if not DEBUG else timedelta(minutes=60)
+    ),  # Example: 1 hour
     # Set the lifespan of the refresh token.
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),  # Example: 1 day
+    "REFRESH_TOKEN_LIFETIME": (
+        timedelta(days=1) if not DEBUG else timedelta(days=7)
+    ),  # Example: 1 day
     # If True, a new refresh token will be issued when a refresh token is used to obtain a new access token.
     # This enhances security as old refresh tokens become invalid.
     "ROTATE_REFRESH_TOKENS": False,
@@ -199,6 +206,7 @@ SIMPLE_JWT = {
     # --- Token Signature and Algorithm ---
     # The digital signature algorithm to sign the tokens.
     "ALGORITHM": "HS256",
+    "SIGNING_KEY": SECRET_KEY,
     # The secret key used for the HS256 signature.
     # By default, this uses your project's SECRET_KEY. It's recommended to leave it unset
     # to use the default unless you have a specific reason to use a different key.
@@ -214,6 +222,10 @@ SIMPLE_JWT = {
     "USER_ID_CLAIM": "user_id",
     # Allows you to add custom claims to the token payload.
     "USER_AUTHENTICATION_RULE": "rest_framework_simplejwt.authentication.default_user_authentication_rule",
+    "AUTH_TOKEN_CLASSES": ("rest_framework_simplejwt.tokens.AccessToken",),
+    "TOKEN_TYPE_CLAIM": "token_type",
+    "TOKEN_USER_CLASS": "rest_framework_simplejwt.models.TokenUser",
+    "JTI_CLAIM": "jti",
 }
 
 

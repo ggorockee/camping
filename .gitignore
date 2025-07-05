@@ -415,3 +415,4 @@ infra
 frontend/.vscode
 
 .env.txt
+backend/api.http

@@ -1,12 +1,11 @@
-from django.urls import re_path
+from django.urls import re_path, path
 from . import views
 
+
 urlpatterns = [
-    # re_path(r"/?$", views.Users.as_view()),
-    # re_path(r"^login/?$", views.LoginView.as_view()),
-    # re_path(r"^logout/?$", views.LogoutView.as_view()),
-    # re_path(r"^me/?$", views.Me.as_view()),
-    # re_path(r"^@<str:username>/?$", views.PublicUser.as_view()),
-    # re_path(r"^change-password/?$", views.ChangePassword.as_view()),
-    # re_path(r"^kakao/?$", views.KakaoLogIn.as_view()),
+    path("register/", views.UserRegistrationView.as_view(), name="user_register"),
+    path("token/", views.MyTokenObtainPairView.as_view(), name="token_obtain_pair"),
+    path("token/refresh/", views.MyTokenRefreshView.as_view(), name="token_refresh"),
+    path("logout/", views.LogoutView.as_view(), name="logout"),
+    path("me/", views.MyInfoView.as_view(), name="my_info"),
 ]
