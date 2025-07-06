@@ -25,6 +25,10 @@ RUN npm run build
 # 경량 Nginx 이미지를 최종 배포 환경으로 사용
 FROM nginx:1.23-bullseye
 
+RUN RUN apt-get update \
+    && apt-get install -y libnginx-mod-http-geoip \
+    && rm -rf /var/lib/apt/lists/*
+
 # builder 단계의 /app/dist 디렉토리에서 생성된 결과물을 Nginx의 기본 서빙 디렉토리로 복사
 COPY --from=builder /app/dist /usr/share/nginx/html
 
