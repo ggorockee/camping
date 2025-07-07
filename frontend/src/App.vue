@@ -2,14 +2,11 @@
 import { RouterView } from "vue-router";
 import { onMounted } from "vue";
 import { useAuthStore } from "@/stores/auth";
-import Header from "@/components/AppHeader.vue";
+import AppHeader from "@/components/AppHeader.vue";
 
 const authStore = useAuthStore();
 
-// 2. 앱이 처음 로드될 때 실행
 onMounted(() => {
-  // localStorage에 저장된 토큰이 있다면,
-  // 해당 토큰으로 사용자 정보를 다시 불러와서 로그인 상태를 유지합니다.
   if (authStore.accessToken) {
     authStore.fetchUser();
   }
@@ -17,40 +14,38 @@ onMounted(() => {
 </script>
 
 <template>
-  <!-- 3. 헤더 컴포넌트 사용 -->
-  <Header />
+  <v-app>
+    <app-header />
 
-  <!-- 페이지 컨텐츠가 렌더링되는 부분 -->
-  <RouterView />
+    <v-main>
+      <router-view />
+    </v-main>
 
-  <!-- 푸터는 그대로 유지 -->
-  <footer class="site-footer bg-dark">
-    <div class="container">
-      <ul class="nav justify-content-center">
-        <li class="nav-item">
-          <a class="nav-link" href="#">Privacy policy</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="#">Terms</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="#">Feedback</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="#">Advertise</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="#">Contact</a>
-        </li>
-      </ul>
-      <div class="copy">
-        &copy; Milo 2022<br />
-        All rights reserved
+    <v-btn
+      v-if="authStore.isAuthenticated"
+      :to="{ name: 'campsite-create' }"
+      icon="mdi-plus"
+      color="primary"
+      size="x-large"
+      position="fixed"
+      location="bottom right"
+      class="ma-8"
+      elevation="8"
+      aria-label="새 캠핑장 등록"
+    ></v-btn>
+
+    <v-footer class="d-flex flex-column pa-0" app>
+      <div class="bg-grey-darken-3 d-flex w-100 align-center px-4 py-2">
+        <strong>ggorockee camping</strong>
+        <v-spacer></v-spacer>
       </div>
-    </div>
-  </footer>
+      <div class="px-4 py-2 bg-black text-center w-100 text-caption">
+        &copy; {{ new Date().getFullYear() }} Milo 2022, All rights reserved
+      </div>
+    </v-footer>
+  </v-app>
 </template>
 
 <style scoped>
-/* App.vue에만 필요한 스타일이 있다면 여기에 유지 */
+/* App.vue에만 필요한 스타일 */
 </style>

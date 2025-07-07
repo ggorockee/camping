@@ -1,0 +1,49 @@
+/* src/assets/css/global.css */
+
+/* 전체 폰트 적용 */
+body,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.h1,
+.h2,
+.h3,
+.h4,
+.h5,
+.h6,
+.lead,
+.btn,
+.form-control,
+.form-label,
+.card-title,
+.card-text {
+  font-family: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui,
+    Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR",
+    "Malgun Gothic", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol",
+    sans-serif !important;
+}
+
+/* ✅ 추가된 부분: 버튼 색상을 테마에 맞게 변경 */
+.btn-primary {
+  background-color: #343a40 !important; /* 어두운 회색 계열 */
+  border-color: #343a40 !important;
+  color: #fff !important;
+}
+
+.btn-primary:hover {
+  background-color: #23272b !important;
+  border-color: #23272b !important;
+}
+
+.btn-primary:disabled {
+  background-color: #6c757d !important;
+  border-color: #6c757d !important;
+}
+
+/* ✅ 추가된 부분: 페이지 하단과 푸터의 간격 */
+main.main {
+  padding-bottom: 6rem;
+}
