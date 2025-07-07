@@ -1,78 +1,29 @@
 <script setup>
-import { RouterLink, RouterView } from "vue-router";
-import { ref } from "vue"; // ref
+import { RouterView } from "vue-router";
+import { onMounted } from "vue";
+import { useAuthStore } from "@/stores/auth";
+import Header from "@/components/AppHeader.vue";
 
-const isSearchActive = ref(false);
+const authStore = useAuthStore();
 
-// 로그인 상태 관리 ---
-const isLoggedIn = ref(false); // true이면 로그인된 상태, false이면 로그아웃된 상태
-
-// 실제 앱에서는 API 호출로 로그인/로그아웃을 처리
-// 여기서는 상태 변경을 시뮬레이션하기 위한 함수
-function login() {
-  alert("로그인 되었습니다. (데모)");
-  isLoggedIn.value = true;
-}
-
-function logout() {
-  alert("로그아웃 되었습니다. (데모)");
-  isLoggedIn.value = false;
-}
+// 2. 앱이 처음 로드될 때 실행
+onMounted(() => {
+  // localStorage에 저장된 토큰이 있다면,
+  // 해당 토큰으로 사용자 정보를 다시 불러와서 로그인 상태를 유지합니다.
+  if (authStore.accessToken) {
+    authStore.fetchUser();
+  }
+});
 </script>
 
 <template>
-  <header>
-    <nav class="navbar navbar-expand-md navbar-light bg-white absolute-top">
-      <div class="container">
-        <div
-          class="collapse navbar-collapse order-3 order-md-2"
-          id="navbar-left"
-        ></div>
+  <!-- 3. 헤더 컴포넌트 사용 -->
+  <Header />
 
-        <RouterLink class="navbar-brand mx-auto order-1 order-md-3" to="/">
-          ggorockee
-        </RouterLink>
-
-        <div
-          class="collapse navbar-collapse order-4 order-md-4"
-          id="navbar-right"
-        >
-          <ul class="navbar-nav ms-auto">
-            <li class="nav-item">
-              <a class="nav-link" href="page-about.html">About</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="page-contact.html">Contact</a>
-            </li>
-
-            <template v-if="!isLoggedIn">
-              <li class="nav-item">
-                <RouterLink to="/register" class="nav-link"
-                  >register</RouterLink
-                >
-              </li>
-              <li class="nav-item">
-                <RouterLink to="/login" class="nav-link"
-                  >login</RouterLink
-                >
-              </li>
-            </template>
-
-            <template v-else>
-              <li class="nav-item">
-                <a href="#" class="nav-link" @click.prevent="logout">logout</a>
-              </li>
-            </template>
-          </ul>
-
-          <form class="form-inline" role="search"></form>
-        </div>
-      </div>
-    </nav>
-  </header>
-
+  <!-- 페이지 컨텐츠가 렌더링되는 부분 -->
   <RouterView />
 
+  <!-- 푸터는 그대로 유지 -->
   <footer class="site-footer bg-dark">
     <div class="container">
       <ul class="nav justify-content-center">
@@ -89,7 +40,7 @@ function logout() {
           <a class="nav-link" href="#">Advertise</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="page-contact.html">Contact</a>
+          <a class="nav-link" href="#">Contact</a>
         </li>
       </ul>
       <div class="copy">
@@ -101,11 +52,5 @@ function logout() {
 </template>
 
 <style scoped>
-.form-inline .form-control {
-  width: 100px;
-  transition: width 0.25s ease-in-out;
-}
-.form-inline.is-active .form-control {
-  width: 200px; /* 활성화 시 넓이 */
-}
+/* App.vue에만 필요한 스타일이 있다면 여기에 유지 */
 </style>

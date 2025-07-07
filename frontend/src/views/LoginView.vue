@@ -1,43 +1,24 @@
 <script setup>
 import { reactive } from "vue";
-import apiClient from "@/api/index.js"; // 기존과 동일한 API 클라이언트 사용
-import { useRouter } from "vue-router";
+import { useAuthStore } from "@/stores/auth"; // 1. auth 스토어 import
 
-const router = useRouter(); // 페이지 이동을 위해 router 인스턴스 생성
-
-// v-model을 통해 폼 데이터를 관리하는 반응형 객체
+const authStore = useAuthStore(); // 2. 스토어 인스턴스 생성
 const form = reactive({
   email: "",
   password: "",
 });
-
 // 폼 제출 시 실행될 함수
 async function submitForm() {
   try {
-    // 1. Django API로 로그인(토큰 발급) 요청
-    // 요청 본문(payload)은 form 객체 전체를 보냅니다.
-    const response = await apiClient.post("/users/token/", form);
-
-    // 2. 응답 데이터에서 access 토큰 추출
-    const accessToken = response.data.access;
-
-    // 3. 토큰을 localStorage에 저장
-    localStorage.setItem("accessToken", accessToken);
-
-    // 4. (중요) 향후 다른 API 요청 시 인증 헤더에 토큰을 자동으로 포함하도록 설정
-    apiClient.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
+    // 3. 스토어의 login 액션을 호출하고 form 데이터를 전달
+    await authStore.login(form);
 
     alert("Login successful! Welcome back.");
-
-    // 5. 로그인 성공 시 메인 페이지로 이동
-    router.push("/");
-    
   } catch (error) {
     console.error("Login failed:", error.response);
 
-    // 에러 처리
+    // 에러 처리는 기존과 동일하게 유지
     if (error.response && error.response.data) {
-      // Django에서 보낸 에러 메시지를 alert으로 표시
       alert(`Login failed: ${JSON.stringify(error.response.data)}`);
     } else {
       alert("An unexpected error occurred. Please try again.");
@@ -55,7 +36,9 @@ async function submitForm() {
             <div class="card-body">
               <header class="text-center">
                 <h4 class="card-title">Login</h4>
-                <p class="text-muted">Please enter your credentials to log in.</p>
+                <p class="text-muted">
+                  Please enter your credentials to log in.
+                </p>
               </header>
 
               <form @submit.prevent="submitForm">
