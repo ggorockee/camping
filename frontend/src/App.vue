@@ -52,7 +52,9 @@ function logout() {
                 >
               </li>
               <li class="nav-item">
-                <a href="#" class="nav-link" @click.prevent="login">login</a>
+                <RouterLink to="/login" class="nav-link"
+                  >login</RouterLink
+                >
               </li>
             </template>
 

@@ -416,3 +416,4 @@ frontend/.vscode
 
 .env.txt
 backend/api.http
+backend/staticfiles
