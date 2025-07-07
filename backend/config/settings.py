@@ -163,7 +163,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 
-STATIC_URL = "/tatic/"
+STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
@@ -316,5 +316,7 @@ if env("ENABLE_ACCESS_LOG"):
     }
 
 
-CH_IMAGE_URL = env("CH_IMAGE_URL")
+# CH_IMAGE_URL = env("CH_IMAGE_URL")
 CLOUDFLARE_API_TOKEN = env("CLOUDFLARE_API_TOKEN")
+CLOUDFLARE_ACCOUNT_ID = env("CLOUDFLARE_ACCOUNT_ID")
+CLOUDFLARE_ACCOUNT_HASH = env("CLOUDFLARE_ACCOUNT_HASH")

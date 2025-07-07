@@ -34,6 +34,10 @@ class CampsiteViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action == "list":
             return serializers.CampsiteListSerializer
+        # 'create' 액션일 때 CampsiteCreateSerializer를 반환하도록 추가
+        if self.action == "create":
+            return serializers.CampsiteCreateSerializer
+        # 그 외의 경우 (retrieve, update 등)는 DetailSerializer 사용
         return serializers.CampsiteDetailSerializer
 
     def perform_create(self, serializer):

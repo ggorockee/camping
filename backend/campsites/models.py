@@ -1,10 +1,8 @@
 from django.db import models
 from django.conf import settings
-
 from common.models import BaseModel
 
 
-# Create your models here.
 class Campsite(BaseModel):
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="campsites"
@@ -16,6 +14,9 @@ class Campsite(BaseModel):
     blog_url = models.URLField(blank=True)
     layout_image_url = models.URLField(blank=True)  # 사이트 배치도 이미지
 
+    def __str__(self):
+        return self.name  # 캠핑장 이름으로 표시
+
 
 class CampsiteImage(BaseModel):
     campsite = models.ForeignKey(
@@ -23,6 +24,12 @@ class CampsiteImage(BaseModel):
     )
     cloudflare_id = models.CharField(max_length=255)
     order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ["order"]
+
+    def __str__(self):
+        return f"{self.campsite.name} - Image (Order: {self.order})"  # "캠핑장 이름 - 이미지 (순서: 0)" 형식으로 표시
 
 
 class Site(BaseModel):
@@ -33,18 +40,27 @@ class Site(BaseModel):
     camp_type = models.CharField(max_length=50)  # 예: 오토캠핑, 글램핑
     base_price = models.DecimalField(max_digits=10, decimal_places=2)
 
+    def __str__(self):
+        return f"{self.campsite.name} - {self.name}"  # "캠핑장 이름 - 사이트 이름" 형식으로 표시
+
 
 class Amenity(BaseModel):
     name = models.CharField(max_length=50, unique=True)
     icon_url = models.URLField(blank=True)
+
+    def __str__(self):
+        return self.name  # 편의시설 이름으로 표시
 
 
 class CampsiteAmenity(BaseModel):
     campsite = models.ForeignKey(Campsite, on_delete=models.CASCADE)
     amenity = models.ForeignKey(Amenity, on_delete=models.CASCADE)
 
+    def __str__(self):
+        return f"{self.campsite.name} has {self.amenity.name}"  # "캠핑장 이름 has 편의시설 이름" 형식으로 표시
 
-class Policy(BaseModel):  # OneToOneField로 변경
+
+class Policy(BaseModel):
     campsite = models.OneToOneField(
         Campsite, on_delete=models.CASCADE, related_name="policy"
     )
@@ -53,16 +69,23 @@ class Policy(BaseModel):  # OneToOneField로 변경
     manner_time_start = models.TimeField()
     manner_time_end = models.TimeField()
 
+    def __str__(self):
+        return (
+            f"Policy for {self.campsite.name}"  # "Policy for 캠핑장 이름" 형식으로 표시
+        )
 
-class PricingRule(BaseModel):  # 요금 정책
+
+class PricingRule(BaseModel):
     campsite = models.ForeignKey(
         Campsite, on_delete=models.CASCADE, related_name="pricing_rules"
     )
     name = models.CharField(max_length=100)  # 예: 주말/성수기 요금
     start_date = models.DateField()
     end_date = models.DateField()
-    # 0=월요일, 1=화요일... 6=일요일
     day_of_week = models.CharField(
         max_length=15, blank=True, help_text="쉼표로 구분된 요일(0-6)"
     )
     extra_charge = models.DecimalField(max_digits=10, decimal_places=2)  # 추가 요금
+
+    def __str__(self):
+        return f"{self.campsite.name} - {self.name}"  # "캠핑장 이름 - 요금 규칙 이름" 형식으로 표시

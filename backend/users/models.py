@@ -1,12 +1,15 @@
 from django.contrib.auth.hashers import make_password
 from django.db import models
-from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
+from django.contrib.auth.models import (
+    AbstractBaseUser,
+    PermissionsMixin,
+    BaseUserManager,
+)
 from django.utils.translation import gettext_lazy as _
-from django.contrib.auth.models import BaseUserManager
 
 
 class UserManager(BaseUserManager):
-
+    # ... (UserManager 코드는 그대로) ...
     def _create_user_object(self, email, password, username=None, **extra_fields):
         if not username:
             username = email.split("@")[0]
@@ -16,15 +19,11 @@ class UserManager(BaseUserManager):
         return user
 
     def _create_user(self, email, password, username=None, **extra_fields):
-        """
-        Create and save a user with the given username, email, and password.
-        """
         user = self._create_user_object(email, password, username, **extra_fields)
         user.save(using=self._db)
         return user
 
     async def _acreate_user(self, email, password, username=None, **extra_fields):
-        """See _create_user()"""
         user = self._create_user_object(email, password, username, **extra_fields)
         await user.asave(using=self._db)
         return user
@@ -48,7 +47,7 @@ class UserManager(BaseUserManager):
         if extra_fields.get("is_superuser") is not True:
             raise ValueError("Superuser must have is_superuser=True.")
 
-        return self._create_user(email, password, username=None, **extra_fields)
+        return self._create_user(email, password, username, **extra_fields)
 
     async def acreate_superuser(
         self, email, password=None, username=None, **extra_fields
@@ -61,7 +60,7 @@ class UserManager(BaseUserManager):
         if extra_fields.get("is_superuser") is not True:
             raise ValueError("Superuser must have is_superuser=True.")
 
-        return await self._acreate_user(email, password, username**extra_fields)
+        return await self._acreate_user(email, password, username, **extra_fields)
 
 
 class User(AbstractBaseUser, PermissionsMixin):
@@ -85,19 +84,9 @@ class User(AbstractBaseUser, PermissionsMixin):
         ),
         blank=True,
     )
-
-    email = models.EmailField(
-        _("email address"),
-        unique=True,
-    )
-    phone_number = models.CharField(
-        max_length=15,
-        blank=True,
-    )
-    points = models.PositiveIntegerField(
-        default=0,
-    )
-
+    email = models.EmailField(_("email address"), unique=True)
+    phone_number = models.CharField(max_length=15, blank=True)
+    points = models.PositiveIntegerField(default=0)
     is_staff = models.BooleanField(
         _("staff status"),
         default=False,
@@ -111,32 +100,17 @@ class User(AbstractBaseUser, PermissionsMixin):
             "Unselect this instead of deleting accounts."
         ),
     )
-
     is_host = models.BooleanField(default=False)
-
-    gender = models.CharField(
-        max_length=10,
-        choices=GenderChoices.choices,
-    )
+    gender = models.CharField(max_length=10, choices=GenderChoices.choices, blank=True)
     language = models.CharField(
-        max_length=2,
-        choices=LanguageChoices.choices,
+        max_length=2, choices=LanguageChoices.choices, blank=True
     )
     currency = models.CharField(
-        max_length=5,
-        choices=CurrencyChoices.choices,
+        max_length=5, choices=CurrencyChoices.choices, blank=True
     )
-
     avatar = models.URLField(blank=True)
-
-    created_at = models.DateTimeField(
-        _("create at"),
-        auto_now_add=True,
-    )
-    updated_at = models.DateTimeField(
-        _("update at"),
-        auto_now=True,
-    )
+    created_at = models.DateTimeField(_("create at"), auto_now_add=True)
+    updated_at = models.DateTimeField(_("update at"), auto_now=True)
 
     objects = UserManager()
 
@@ -147,3 +121,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         verbose_name = _("user")
         verbose_name_plural = _("users")
         abstract = False
+
+    # ✅ 추가된 부분
+    def __str__(self):
+        return self.username or self.email

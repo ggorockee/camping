@@ -26,6 +26,64 @@ class CampsiteListSerializer(serializers.ModelSerializer):
         fields = ("id", "name", "address", "phone_number")
 
 
+class CampsiteImageSerializer(serializers.ModelSerializer):
+    # 응답에 포함될, 동적으로 생성되는 전체 이미지 URL 필드
+    image_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = models.CampsiteImage
+        # API를 통해 보여줄 필드 목록
+        # fields = ("id", "cloudflare_id", "image_url", "order")
+        # 클라이언트로부터 직접 입력받는 필드
+        # extra_kwargs = {"cloudflare_id": {"write_only": True}}
+        fields = ("cloudflare_id", "order", "image_url")
+
+    def get_image_url(self, obj):
+        """
+        Cloudflare ID와 variant 이름을 조합하여 전체 이미지 URL을 생성
+        'public'은 기본 variant 이름. 필요에 따라 변경할 수 있음.
+        """
+        # 이 부분은 Cloudflare 대시보드의 'Images' > 'Variants'에서 확인 가능
+        variant = "public"
+        return f"https://imagedelivery.net/{settings.CLOUDFLARE_ACCOUNT_HASH}/{obj.cloudflare_id}/{variant}"
+
+
+class CampsiteCreateSerializer(serializers.ModelSerializer):
+    image_ids = serializers.ListField(
+        child=serializers.CharField(),
+        write_only=True,
+        help_text="Cloudflare 이미지 ID 목록 (최소 3개 이상)",
+    )
+
+    class Meta:
+        model = models.Campsite
+        fields = ("name", "description", "image_ids")
+
+    def validate_image_ids(self, value):
+        if len(value) < 3:
+            raise serializers.ValidationError("최소 3장 이상의 사진 ID가 필요해요~")
+        return value
+
+    def create(self, validated_data):
+        # 프론트에서 받은 'image_ids' 목록을 가져옴
+        image_ids_list = validated_data.pop("image_ids")
+
+        campsite = models.Campsite.objects.create(**validated_data)
+
+        images_to_create = [
+            models.CampsiteImage(
+                campsite=campsite,
+                # ⭐️ 핵심: 리스트의 각 ID를 cloudflare_id 필드에 할당
+                cloudflare_id=image_id,
+                order=index,
+            )
+            for index, image_id in enumerate(image_ids_list)
+        ]
+        models.CampsiteImage.objects.bulk_create(images_to_create)
+
+        return campsite
+
+
 class CampsiteDetailSerializer(serializers.ModelSerializer):
     """캠핑장 상세 정보를 위한 Serializer"""
 
@@ -36,29 +94,17 @@ class CampsiteDetailSerializer(serializers.ModelSerializer):
     policy = PolicySerializer(read_only=True)
 
     # M2M 관계인 amenities도 중첩 Serializer로 보여줌
-    amenities = AmenitySerializer(many=True, read_only=True, source="amenity_set")
+    amenities = AmenitySerializer(
+        many=True,
+        read_only=True,
+        source="amenity_set",
+    )
+
+    images = CampsiteImageSerializer(
+        many=True,
+        read_only=True,
+    )
 
     class Meta:
         model = models.Campsite
         fields = "__all__"
-
-
-class CampsiteImageSerializer(serializers.ModelSerializer):
-    # 응답에 포함될, 동적으로 생성되는 전체 이미지 URL 필드
-    image_url = serializers.SerializerMethodField()
-
-    class Meta:
-        model = models.CampsiteImage
-        # API를 통해 보여줄 필드 목록
-        fields = ("id", "cloudflare_id", "image_url", "order")
-        # 클라이언트로부터 직접 입력받는 필드
-        extra_kwargs = {"cloudflare_id": {"write_only": True}}
-
-    def get_image_url(self, obj):
-        """
-        Cloudflare ID와 variant 이름을 조합하여 전체 이미지 URL을 생성
-        'public'은 기본 variant 이름입니다. 필요에 따라 변경할 수 있음.
-        """
-        # 이 부분은 Cloudflare 대시보드의 'Images' > 'Variants'에서 확인 가능
-        variant = "public"
-        return f"https://imagedelivery.net/{settings.CLOUDFLARE_ACCOUNT_HASH}/{obj.cloudflare_id}/{variant}"

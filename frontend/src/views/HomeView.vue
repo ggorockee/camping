@@ -14,6 +14,14 @@ onMounted(() => {
     <div class="container-fluid">
       <div class="row">
         <div class="col-md-9">
+          <div class="d-flex justify-content-end mb-4">
+            <router-link
+              :to="{ name: 'campsite-create' }"
+              class="btn btn-secondary"
+            >
+              새 캠핑장 등록하기
+            </router-link>
+          </div>
           <div class="row">
             <div class="col-md-4">
               <article class="card mb-4">
