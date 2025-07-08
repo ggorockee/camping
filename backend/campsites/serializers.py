@@ -21,9 +21,29 @@ class PolicySerializer(serializers.ModelSerializer):
 class CampsiteListSerializer(serializers.ModelSerializer):
     """캠핑장 목록을 위한 간단한 Serializer"""
 
+    thumbnail_url = serializers.SerializerMethodField()
+
+
     class Meta:
         model = models.Campsite
-        fields = ("id", "name", "address", "phone_number")
+        fields = ("id", "name", "address", "phone_number", "created_at", "description", "thumbnail_url")
+
+    def get_thumbnail_url(self, obj):
+        """캠핑장의 첫 번째 이미지 URL을 return"""
+        # obj는 Campsite 인스턴스.
+        # related_name='images'를 통해 캠핑장에 연결된 이미지들을 가져옴.
+        # ordering = ["order"]에 의해 정렬되어 있으므로 .first()는 대표 이미지가 됩니다.
+        first_image = obj.images.first()
+
+        # 이미지가 없는 경우 null을 반환합니다.
+        if not first_image:
+            return None
+
+        # CampsiteImageSerializer의 URL 생성 로직을 활용.
+        # 성능을 위해 목록 보기용 썸네일 variant를 사용하는 것이 좋습니다. (예: "thumbnail")
+        variant = "public"  # 필요에 따라 "thumbnail" 등 작은 variant로 변경
+        return f"https://imagedelivery.net/{settings.CLOUDFLARE_ACCOUNT_HASH}/{first_image.cloudflare_id}/{variant}"
+
 
 
 class CampsiteImageSerializer(serializers.ModelSerializer):
