@@ -1,0 +1,70 @@
+<template>
+  <div class="h-screen flex items-center flex-col mt-10 lg:mt-28">
+    <div className="w-full max-w-screen-sm flex flex-col px-5 items-center">
+      <h4 className="w-full font-medium text-left text-3xl mb-5">Welcome back</h4>
+
+      <form @submit.prevent="onSubmit" class="grid gap-3 mt-5 w-full mb-5">
+        <input
+          id="email"
+          v-model="email"
+          type="email"
+          placeholder="you@example.com"
+          class="input"
+        />
+        <span v-if="emailError" class="font-medium text-red-500 text-left"> {{ emailError }} </span>
+
+        <input
+          id="password"
+          v-model="password"
+          type="password"
+          placeholder="••••••••"
+          class="input"
+        />
+        <span v-if="passwordError" class="font-medium text-red-500 text-left">
+          {{ passwordError }}
+        </span>
+
+        <button type="submit" class="mt-3 btn">Log In</button>
+      </form>
+    </div>
+  </div>
+</template>
+
+<script lang="ts" setup>
+import { useForm, useField } from 'vee-validate'
+import * as yup from 'yup'
+
+import { useAuthStore } from '@/stores/useAuthStore'
+import type { LoginPayload } from '@/types/api'
+
+// 1) 스키마 정의
+const schema = yup.object({
+  email: yup.string().required('Email is required').email('Invalid email address'),
+  password: yup
+    .string()
+    .required('Password is required')
+    .min(10, 'Password must be more than 10 chars'),
+})
+
+// 2) useForm으로 전체 컨텍스트 생성
+const { handleSubmit } = useForm<LoginPayload>({
+  validationSchema: schema,
+})
+
+// 3) useField로 각 필드 바인딩
+const { value: email, errorMessage: emailError } = useField<string>('email')
+const { value: password, errorMessage: passwordError } = useField<string>('password')
+
+const authStore = useAuthStore()
+const onSubmit = handleSubmit(async (values) => {
+  await authStore.login(values)
+  alert('Login successful! Welcome back.')
+})
+</script>
+
+<style scoped>
+/*
+  .input과 .btn 커스텀 클래스를 Tailwind의 @apply를 사용해 정의합니다.
+  v4 문법에 맞게 수정된 버전을 사용합니다.
+*/
+</style>

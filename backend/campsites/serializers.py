@@ -23,10 +23,17 @@ class CampsiteListSerializer(serializers.ModelSerializer):
 
     thumbnail_url = serializers.SerializerMethodField()
 
-
     class Meta:
         model = models.Campsite
-        fields = ("id", "name", "address", "phone_number", "created_at", "description", "thumbnail_url")
+        fields = (
+            "id",
+            "name",
+            "address",
+            "phone_number",
+            "created_at",
+            "description",
+            "thumbnail_url",
+        )
 
     def get_thumbnail_url(self, obj):
         """캠핑장의 첫 번째 이미지 URL을 return"""
@@ -43,7 +50,6 @@ class CampsiteListSerializer(serializers.ModelSerializer):
         # 성능을 위해 목록 보기용 썸네일 variant를 사용하는 것이 좋습니다. (예: "thumbnail")
         variant = "public"  # 필요에 따라 "thumbnail" 등 작은 variant로 변경
         return f"https://imagedelivery.net/{settings.CLOUDFLARE_ACCOUNT_HASH}/{first_image.cloudflare_id}/{variant}"
-
 
 
 class CampsiteImageSerializer(serializers.ModelSerializer):

@@ -1,100 +1,93 @@
-<script setup>
-import { reactive } from "vue";
-import { useAuthStore } from "@/stores/auth"; // 1. auth 스토어 import
+<template>
+  <div class="min-h-screen flex flex-col items-center justify-center bg-white px-4">
+    <div class="w-full max-w-sm">
+      <h1 class="text-2xl font-semibold text-gray-900 mb-6">What's your phone number or email?</h1>
+      <!-- Input Field -->
+      <input
+        v-model="identifier"
+        type="text"
+        placeholder="Enter phone number or email"
+        class="w-full h-10 px-3 mb-4 rounded-md bg-gray-100 text-gray-700 placeholder-gray-500 focus:outline-none"
+      />
+      <!-- Continue Button -->
+      <button
+        @click="onContinue"
+        class="w-full h-10 mb-6 bg-black text-white rounded-md font-medium hover:bg-gray-800 transition"
+      >
+        Continue
+      </button>
 
-const authStore = useAuthStore(); // 2. 스토어 인스턴스 생성
-const form = reactive({
-  email: "",
-  password: "",
-});
-// 폼 제출 시 실행될 함수
-async function submitForm() {
-  try {
-    // 3. 스토어의 login 액션을 호출하고 form 데이터를 전달
-    await authStore.login(form);
+      <!-- Separator -->
+      <div class="flex items-center mb-6">
+        <div class="flex-grow h-px bg-gray-300"></div>
+        <span class="px-2 text-xs text-gray-500">or</span>
+        <div class="flex-grow h-px bg-gray-300"></div>
+      </div>
 
-    alert("Login successful! Welcome back.");
-  } catch (error) {
-    console.error("Login failed:", error.response);
+      <!-- Social Buttons -->
+      <button
+        @click="onGoogleLogin"
+        class="w-full h-10 mb-3 flex items-center justify-center bg-gray-100 rounded-md font-medium hover:bg-gray-200 transition"
+      >
+        <img src="/google-icon.svg" alt="Google" class="w-5 h-5 mr-2" />
+        Continue with Google
+      </button>
+      <button
+        @click="onAppleLogin"
+        class="w-full h-10 mb-6 flex items-center justify-center bg-gray-100 rounded-md font-medium hover:bg-gray-200 transition"
+      >
+        <img src="/apple-icon.svg" alt="Apple" class="w-5 h-5 mr-2" />
+        Continue with Apple
+      </button>
 
-    // 에러 처리는 기존과 동일하게 유지
-    if (error.response && error.response.data) {
-      alert(`Login failed: ${JSON.stringify(error.response.data)}`);
-    } else {
-      alert("An unexpected error occurred. Please try again.");
-    }
-  }
+      <!-- Separator -->
+      <div class="flex items-center mb-6">
+        <div class="flex-grow h-px bg-gray-300"></div>
+        <span class="px-2 text-xs text-gray-500">or</span>
+        <div class="flex-grow h-px bg-gray-300"></div>
+      </div>
+
+      <!-- QR Code Login -->
+      <button
+        @click="onQrLogin"
+        class="w-full h-10 mb-6 bg-gray-100 rounded-md font-medium hover:bg-gray-200 transition flex items-center justify-center"
+      >
+        <img src="/qr-icon.svg" alt="QR" class="w-5 h-5 mr-2" />
+        Log in with QR code
+      </button>
+
+      <!-- Disclaimer -->
+      <p class="text-xs text-gray-500">
+        By proceeding, you consent to get calls, WhatsApp or SMS/RCS messages, including by
+        automated means, from Uber and its affiliates to the number provided.
+      </p>
+    </div>
+  </div>
+</template>
+
+<script lang="ts" setup>
+import { ref } from 'vue'
+
+const identifier = ref<string>('')
+
+function onContinue() {
+  // TODO: handle continue action
+  console.log('Continue with', identifier.value)
+}
+
+function onGoogleLogin() {
+  // TODO: Google OAuth
+}
+
+function onAppleLogin() {
+  // TODO: Apple OAuth
+}
+
+function onQrLogin() {
+  // TODO: QR login
 }
 </script>
 
-<template>
-  <main class="main pt-4">
-    <div class="container">
-      <div class="row justify-content-center">
-        <div class="col-md-8 col-lg-6">
-          <article class="card card-outline mb-4">
-            <div class="card-body">
-              <header class="text-center">
-                <h4 class="card-title">Login</h4>
-                <p class="text-muted">
-                  Please enter your credentials to log in.
-                </p>
-              </header>
-
-              <form @submit.prevent="submitForm">
-                <div class="mb-3">
-                  <label for="email" class="form-label">Email</label>
-                  <input
-                    type="email"
-                    class="form-control"
-                    id="email"
-                    placeholder="name@example.com"
-                    v-model="form.email"
-                    required
-                  />
-                </div>
-
-                <div class="mb-4">
-                  <label for="password" class="form-label">Password</label>
-                  <input
-                    type="password"
-                    class="form-control"
-                    id="password"
-                    placeholder="Enter your password"
-                    v-model="form.password"
-                    required
-                  />
-                </div>
-
-                <div class="d-grid">
-                  <button type="submit" class="btn btn-lg btn-login">
-                    Login
-                  </button>
-                </div>
-              </form>
-            </div>
-          </article>
-        </div>
-      </div>
-    </div>
-  </main>
-</template>
-
 <style scoped>
-/* 이 컴포넌트에만 적용되는 스타일 */
-.card-title {
-  font-weight: 600;
-}
-
-/* 커스텀 버튼 스타일 */
-.btn-login {
-  background-color: #212529;
-  border-color: #212529;
-  color: white;
-}
-
-.btn-login:hover {
-  background-color: #343a40;
-  border-color: #343a40;
-}
+/* 스타일은 Tailwind CSS 유틸리티로 관리합니다 */
 </style>
