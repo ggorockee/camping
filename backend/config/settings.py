@@ -23,6 +23,9 @@ env = environ.Env(
     IN_DOCKER_BUILD=(bool, False),
     ENABLE_ACCESS_LOG=(bool, False),
     PAGE_SIZE=(int, 10),
+    CLOUDFLARE_API_TOKEN=(str, ""),
+    CLOUDFLARE_ACCOUNT_ID=(str, ""),
+    CLOUDFLARE_ACCOUNT_HASH=(str, ""),
 )
 
 IN_DOCKER_BUILD = env("IN_DOCKER_BUILD")
