@@ -1,21 +1,71 @@
+from django.utils import timezone
 from django.db import models
+from django.core import exceptions
 from django.conf import settings
 from common.models import BaseModel
 
 
 class Campsite(BaseModel):
     owner = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="campsites"
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="campsites",
     )
     name = models.CharField(max_length=100)
     address = models.CharField(max_length=255)
     description = models.TextField()
-    phone_number = models.CharField(max_length=20, blank=True)
-    blog_url = models.URLField(blank=True)
+
+    price = models.PositiveIntegerField(
+        help_text="총 숙박 요금 (단위: 원)",
+    )
+
+    contact_number = models.CharField(
+        max_length=20,
+        blank=True,
+        help_text="대표 번호",
+    )
+
+    # 1) 체크인/체크아웃 날짜
+    check_in = models.DateField()
+    check_out = models.DateField()
+
     layout_image_url = models.URLField(blank=True)  # 사이트 배치도 이미지
 
     def __str__(self):
         return self.name  # 캠핑장 이름으로 표시
+
+    @property
+    def stay_nights(self):
+        if self.check_in and self.check_out:
+            return (self.check_out - self.check_in).days
+        return None
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def clean(self):
+        super().clean()
+        today = timezone.localdate()
+
+        # 1) check_in < check_out
+        if self.check_in and self.check_out:
+            if self.check_in >= self.check_out:
+                raise exceptions.ValidationError(
+                    {
+                        "check_in": "체크인 날짜는 체크아웃 날짜보다 이전이어야 합니다.",
+                        "check_out": "체크아웃 날짜는 체크인 날짜보다 이후이어야 합니다.",
+                    }
+                )
+
+        # 2) check_in, check_out 모두 오늘 이전이어야 함
+        if self.check_in and self.check_in >= today:
+            raise exceptions.ValidationError(
+                {"check_in": "체크인 날짜는 오늘 이전이어야 합니다."}
+            )
+        if self.check_out and self.check_out >= today:
+            raise exceptions.ValidationError(
+                {"check_out": "체크아웃 날짜는 오늘 이전이어야 합니다."}
+            )
 
 
 class CampsiteImage(BaseModel):

@@ -21,6 +21,7 @@ class PolicySerializer(serializers.ModelSerializer):
 class CampsiteListSerializer(serializers.ModelSerializer):
     """캠핑장 목록을 위한 간단한 Serializer"""
 
+    stay_nights = serializers.IntegerField(read_only=True)
     thumbnail_url = serializers.SerializerMethodField()
 
     class Meta:
@@ -29,10 +30,14 @@ class CampsiteListSerializer(serializers.ModelSerializer):
             "id",
             "name",
             "address",
-            "phone_number",
+            "contact_number",
             "created_at",
             "description",
+            "check_in",
+            "check_out",
             "thumbnail_url",
+            "stay_nights",
+            "price",
         )
 
     def get_thumbnail_url(self, obj):
