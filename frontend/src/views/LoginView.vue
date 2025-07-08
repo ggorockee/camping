@@ -1,21 +1,38 @@
 <template>
   <div class="min-h-screen flex flex-col items-center justify-center bg-white px-4">
     <div class="w-full max-w-sm">
-      <h1 class="text-2xl font-semibold text-gray-900 mb-6">What's your phone number or email?</h1>
-      <!-- Input Field -->
-      <input
-        v-model="identifier"
-        type="text"
-        placeholder="Enter phone number or email"
-        class="w-full h-10 px-3 mb-4 rounded-md bg-gray-100 text-gray-700 placeholder-gray-500 focus:outline-none"
-      />
-      <!-- Continue Button -->
-      <button
-        @click="onContinue"
-        class="w-full h-10 mb-6 bg-black text-white rounded-md font-medium hover:bg-gray-800 transition"
-      >
-        Continue
-      </button>
+      <h1 class="text-2xl font-semibold text-gray-900 mb-6">What's your email?</h1>
+      <form @submit.prevent="onSubmit">
+        <!-- Input Field -->
+        <input
+          id="email"
+          v-model="email"
+          type="text"
+          placeholder="Enter email"
+          class="w-full h-10 px-3 mb-4 rounded-md bg-gray-100 text-gray-700 placeholder-gray-500 focus:outline-none"
+        />
+        <span v-if="emailError" class="font-medium text-red-500 text-left">
+          {{ emailError }}
+        </span>
+
+        <input
+          id="password"
+          v-model="password"
+          type="password"
+          placeholder="input your password"
+          class="w-full h-10 px-3 mb-4 rounded-md bg-gray-100 text-gray-700 placeholder-gray-500 focus:outline-none"
+        />
+        <span v-if="passwordError" class="font-medium text-red-500 text-left">
+          {{ passwordError }}
+        </span>
+        <!-- Continue Button -->
+        <button
+          type="submit"
+          class="w-full h-10 mb-6 bg-black text-white rounded-md font-medium hover:bg-gray-800 transition"
+        >
+          Continue
+        </button>
+      </form>
 
       <!-- Separator -->
       <div class="flex items-center mb-6">
@@ -66,14 +83,42 @@
 </template>
 
 <script lang="ts" setup>
-import { ref } from 'vue'
+import { useForm, useField } from 'vee-validate'
+import * as yup from 'yup'
 
-const identifier = ref<string>('')
+import { useAuthStore } from '@/stores/useAuthStore'
+import type { LoginPayload } from '@/types/api'
 
-function onContinue() {
-  // TODO: handle continue action
-  console.log('Continue with', identifier.value)
-}
+// 1) 스키마 정의
+const schema = yup.object({
+  email: yup.string().required('Email is required').email('Invalid email address'),
+  password: yup
+    .string()
+    .required('Password is required')
+    .min(10, 'Password must be more than 8 chars'),
+})
+
+// 2) useForm으로 전체 컨텍스트 생성
+const { handleSubmit } = useForm<LoginPayload>({
+  validationSchema: schema,
+})
+
+// 3) useField로 각 필드 바인딩
+const { value: email, errorMessage: emailError } = useField<string>('email')
+const { value: password, errorMessage: passwordError } = useField<string>('password')
+
+const authStore = useAuthStore()
+const onSubmit = handleSubmit(async (values) => {
+  await authStore.login(values)
+  alert('Login successful! Welcome back.')
+})
+
+// const identifier = ref<string>('')
+
+// function onContinue() {
+//   // TODO: handle continue action
+//   console.log('Continue with', identifier.value)
+// }
 
 function onGoogleLogin() {
   // TODO: Google OAuth
