@@ -13,15 +13,8 @@ onMounted(() => {
   <main class="main pt-4">
     <div class="container-fluid">
       <div class="row">
-        <div class="col-md-9">
-          <div class="d-flex justify-content-end mb-4">
-            <router-link
-              :to="{ name: 'campsite-create' }"
-              class="btn btn-secondary"
-            >
-              새 캠핑장 등록하기
-            </router-link>
-          </div>
+        <div class="col-md-9 main-content">
+          <!-- 게시물 목록 -->
           <div class="row">
             <div class="col-md-4">
               <article class="card mb-4">
@@ -49,8 +42,6 @@ onMounted(() => {
                   </p>
                 </div>
               </article>
-              <!-- /.card -->
-
               <article class="card mb-4">
                 <header class="card-header">
                   <div class="card-meta">
@@ -76,7 +67,6 @@ onMounted(() => {
                   </p>
                 </div>
               </article>
-              <!-- /.card -->
             </div>
             <div class="col-md-4">
               <article class="card mb-4">
@@ -106,8 +96,6 @@ onMounted(() => {
                   </p>
                 </div>
               </article>
-              <!-- /.card -->
-
               <article class="card mb-4">
                 <header class="card-header">
                   <div class="card-meta">
@@ -133,7 +121,6 @@ onMounted(() => {
                   </p>
                 </div>
               </article>
-              <!-- /.card -->
             </div>
             <div class="col-md-4">
               <article class="card mb-4">
@@ -161,8 +148,6 @@ onMounted(() => {
                   </p>
                 </div>
               </article>
-              <!-- /.card -->
-
               <article class="card mb-4">
                 <header class="card-header">
                   <div class="card-meta">
@@ -188,7 +173,6 @@ onMounted(() => {
                   </p>
                 </div>
               </article>
-              <!-- /.card -->
             </div>
           </div>
         </div>
@@ -204,7 +188,6 @@ onMounted(() => {
                 </p>
               </div>
             </div>
-            <!-- /.card -->
           </aside>
 
           <aside class="sidebar sidebar-sticky">
@@ -228,7 +211,6 @@ onMounted(() => {
                 >
               </div>
             </div>
-            <!-- /.card -->
             <div class="card mb-4">
               <div class="card-body">
                 <h4 class="card-title">Popular stories</h4>
@@ -252,96 +234,16 @@ onMounted(() => {
                 in Work
               </div>
             </div>
-            <!-- /.card -->
           </aside>
         </div>
       </div>
     </div>
   </main>
-
-  <div class="site-newsletter">
-    <div class="container">
-      <div class="text-center">
-        <h3 class="h4 mb-2">Subscribe to our newsletter</h3>
-        <p class="text-muted">
-          Join our monthly newsletter and never miss out on new stories and
-          promotions.
-        </p>
-
-        <div class="row">
-          <div class="col-xs-12 col-sm-9 col-md-7 col-lg-5 ms-auto me-auto">
-            <div class="input-group mb-3 mt-3">
-              <input
-                type="text"
-                class="form-control"
-                placeholder="Email address"
-                aria-label="Email address"
-              />
-              <span class="input-group-btn">
-                <button class="btn btn-secondary" type="button">
-                  Subscribe
-                </button>
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="site-instagram">
-    <div class="action">
-      <a class="btn btn-light" href="#"> Follow us @ Instagram </a>
-    </div>
-    <div class="row g-0">
-      <div class="col-sm-6">
-        <div class="row g-0">
-          <div class="col-3">
-            <a class="photo" href="#">
-              <img class="img-fluid" src="/img/instagram/1.jpg" alt="" />
-            </a>
-          </div>
-          <div class="col-3">
-            <a class="photo" href="#">
-              <img class="img-fluid" src="/img/instagram/2.jpg" alt="" />
-            </a>
-          </div>
-          <div class="col-3">
-            <a class="photo" href="#">
-              <img class="img-fluid" src="/img/instagram/3.jpg" alt="" />
-            </a>
-          </div>
-          <div class="col-3">
-            <a class="photo" href="#">
-              <img class="img-fluid" src="/img/instagram/4.jpg" alt="" />
-            </a>
-          </div>
-        </div>
-      </div>
-      <div class="col-sm-6">
-        <div class="row g-0">
-          <div class="col-3">
-            <a class="photo" href="#">
-              <img class="img-fluid" src="/img/instagram/5.jpg" alt="" />
-            </a>
-          </div>
-          <div class="col-3">
-            <a class="photo" href="#">
-              <img class="img-fluid" src="/img/instagram/6.jpg" alt="" />
-            </a>
-          </div>
-          <div class="col-3">
-            <a class="photo" href="#">
-              <img class="img-fluid" src="/img/instagram/7.jpg" alt="" />
-            </a>
-          </div>
-          <div class="col-3">
-            <a class="photo" href="#">
-              <img class="img-fluid" src="/img/instagram/8.jpg" alt="" />
-            </a>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
 </template>
+
+<!-- ✅ 이 컴포넌트에는 더 이상 버튼 스타일이 필요 없으므로 <style> 태그를 삭제했습니다. -->
+<style scoped>
+.main-content {
+  position: relative;
+}
+</style>
