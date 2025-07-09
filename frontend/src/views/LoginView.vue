@@ -87,7 +87,7 @@ import { useForm, useField } from 'vee-validate'
 import * as yup from 'yup'
 
 import { useAuthStore } from '@/stores/useAuthStore'
-import type { LoginPayload } from '@/types/api'
+import type { ILoginPayload } from '@/types/api'
 
 // 1) 스키마 정의
 const schema = yup.object({
@@ -99,7 +99,7 @@ const schema = yup.object({
 })
 
 // 2) useForm으로 전체 컨텍스트 생성
-const { handleSubmit } = useForm<LoginPayload>({
+const { handleSubmit } = useForm<ILoginPayload>({
   validationSchema: schema,
 })
 

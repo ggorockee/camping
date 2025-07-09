@@ -14,21 +14,24 @@
           />
         </svg>
       </button>
-      <span class="text-gray-800 font-bold text-xl">ggorockee</span>
+      <RouterLink to="/" class="text-gray-800 font-bold text-xl"> ggorockee </RouterLink>
     </div>
 
     <!-- Right: Login, Sign up 버튼 -->
     <div class="flex items-center space-x-4 px-8">
-      <button
+      <RouterLink
+        to="/login"
         class="px-4 py-2 rounded-full border border-gray-800 text-gray-800 text-sm font-medium hover:bg-gray-100 transition"
       >
         Login
-      </button>
-      <button
+      </RouterLink>
+
+      <RouterLink
+        to="/register"
         class="px-4 py-2 rounded-full bg-black text-white text-sm font-medium hover:bg-gray-800 transition"
       >
         Sign up
-      </button>
+      </RouterLink>
     </div>
 
     <!-- Slide-out 메뉴 -->
@@ -99,18 +102,18 @@
     <!-- Overlay with slight blur and light opacity -->
     <div v-if="menuOpen" @click="toggleMenu" class="fixed inset-0 bg-black/65 z-30"></div>
     <div class="fixed bottom-6 right-6 z-50">
-      <button
-        @click="true"
+      <RouterLink
+        to="/new"
         class="w-14 h-14 rounded-full bg-black/75 text-white text-3xl leading-none flex items-center justify-center shadow-lg hover:bg-gray-800 transition"
+        ><span class="relative -top-0.5">+</span></RouterLink
       >
-        <span class="relative -top-0.5">+</span>
-      </button>
     </div>
   </header>
 </template>
 
 <script lang="ts" setup>
 import { ref } from 'vue'
+import { RouterLink } from 'vue-router'
 
 const menuOpen = ref(false)
 function toggleMenu() {

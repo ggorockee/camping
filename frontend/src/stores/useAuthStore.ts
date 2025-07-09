@@ -2,14 +2,14 @@ import { defineStore } from 'pinia'
 import { ref, computed, type Ref } from 'vue'
 import { useRouter } from 'vue-router'
 import apiClient from '@/api/index'
-import type { User, LoginPayload, TokenResponse } from '@/types/api'
+import type { IUser, ILoginPayload, ITokenResponse } from '@/types/api'
 
 export const useAuthStore = defineStore('auth', () => {
   const router = useRouter()
 
   // State
   const accessToken: Ref<string | null> = ref(localStorage.getItem('accessToken'))
-  const user: Ref<User | null> = ref(null)
+  const user: Ref<IUser | null> = ref(null)
 
   // Getters
   const isAuthenticated = computed<boolean>(() => Boolean(accessToken.value))
@@ -31,7 +31,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     try {
-      const response = await apiClient.get<User>('/users/me/')
+      const response = await apiClient.get<IUser>('/users/me/')
       user.value = response.data
     } catch (err) {
       console.error('Failed to fetch user:', err)
@@ -39,8 +39,8 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function login(payload: LoginPayload): Promise<void> {
-    const response = await apiClient.post<TokenResponse>('/users/token/', payload)
+  async function login(payload: ILoginPayload): Promise<void> {
+    const response = await apiClient.post<ITokenResponse>('/users/token/', payload)
     setToken(response.data.access)
     await fetchUser()
     await router.push('/')
