@@ -2,6 +2,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { render } from 'timeago.js'
 import type { ICampsite } from '@/types/api' // Campsite 인터페이스 경로
+import { RouterLink } from 'vue-router'
 
 // Prop 타입 안전성 확보
 const props = defineProps<{ campsite: ICampsite }>()
@@ -23,18 +24,20 @@ const nights = computed(() => props.campsite.stay_nights)
 </script>
 
 <template>
-  <div class="relative rounded-lg overflow-hidden bg-white shadow mb-4">
-    <!-- 이미지 (정사각 유지) -->
-    <div class="relative w-full aspect-square">
-      <img :src="imageSrc" :alt="title" class="absolute inset-0 w-full h-full object-cover" />
+  <RouterLink :to="{ name: 'campsite-detail', params: { id: campsite.id } }">
+    <div class="relative rounded-lg overflow-hidden bg-white shadow mb-4">
+      <!-- 이미지 (정사각 유지) -->
+      <div class="relative w-full aspect-square">
+        <img :src="imageSrc" :alt="title" class="absolute inset-0 w-full h-full object-cover" />
+      </div>
+      <!-- 텍스트 영역 -->
+      <div class="px-2 py-3">
+        <h3 class="text-sm font-medium text-gray-900 truncate">{{ title }}</h3>
+        <p class="text-xs text-gray-500 mt-1 truncate">{{ dateRange }}</p>
+        <p class="text-sm font-semibold text-gray-900 mt-1">\{{ price }} · {{ nights }}박</p>
+      </div>
     </div>
-    <!-- 텍스트 영역 -->
-    <div class="px-2 py-3">
-      <h3 class="text-sm font-medium text-gray-900 truncate">{{ title }}</h3>
-      <p class="text-xs text-gray-500 mt-1 truncate">{{ dateRange }}</p>
-      <p class="text-sm font-semibold text-gray-900 mt-1">\{{ price }} · {{ nights }}박</p>
-    </div>
-  </div>
+  </RouterLink>
 </template>
 
 <style scoped>

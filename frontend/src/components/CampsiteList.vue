@@ -9,7 +9,7 @@
 
 <script lang="ts" setup>
 import { onMounted, ref } from 'vue'
-import Campsite from '@/components/Campsite.vue'
+import Campsite from '@/components/CampSite.vue'
 import apiClient from '@/api'
 import type { ICampsite, ICampsiteResponse } from '@/types/api'
 
