@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed, type Ref } from 'vue'
 import { useRouter } from 'vue-router'
 import apiClient from '@/api/index'
-import type { IUser, ILoginPayload, ITokenResponse } from '@/types/api'
+import type { IUser, ILoginPayload, ITokenResponse, IRegisterResponse } from '@/types/api'
 
 export const useAuthStore = defineStore('auth', () => {
   const router = useRouter()
@@ -55,6 +55,15 @@ export const useAuthStore = defineStore('auth', () => {
     void router.push(redirectPath)
   }
 
+  function registerSuccess(data: IRegisterResponse): void {
+    // 1. 응답으로 받은 유저 정보와 토큰을 상태에 저장
+    user.value = data.user
+    setToken(data.access_token)
+
+    // 2. 홈페이지로 리디렉션
+    router.push('/')
+  }
+
   return {
     accessToken,
     user,
@@ -63,5 +72,6 @@ export const useAuthStore = defineStore('auth', () => {
     fetchUser,
     login,
     logout,
+    registerSuccess,
   }
 })

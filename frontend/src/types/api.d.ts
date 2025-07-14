@@ -32,3 +32,16 @@ export interface ICampsite {
 export interface ICampsiteResponse {
   results: Campsite[]
 }
+
+export interface IRegisterPayload {
+  email: string
+  username: string
+  password: string
+  password2: string
+}
+
+export interface IRegisterResponse {
+  user: IUser
+  message: string
+  access_token: string
+}
