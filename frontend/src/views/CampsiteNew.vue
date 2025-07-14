@@ -1,36 +1,11 @@
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import apiClient from '@/api/index'
+import type { IAmenity, ISite, IPricingRule, IImageFile } from '@/types/api'
 
-// --- 타입 정의 (TypeScript) ---
-interface Site {
-  id: number
-  name: string
-  camp_type: string
-  base_price: number | null
-}
-interface PricingRule {
-  id: number
-  name: string
-  start_date: string
-  end_date: string
-  day_of_week: string[] // "0"~"6" (일~토)
-  extra_charge: number | null
-}
-interface ImageFile {
-  id: number
-  file: File
-  previewSrc: string
-}
-
-// --- 기본 데이터 ---
-const allAmenities = [
-  { id: 'wifi', name: '무선 인터넷', icon: '📶' },
-  { id: 'parking', name: '주차장', icon: '🅿️' },
-  { id: 'shower', name: '샤워실', icon: '🚿' },
-  { id: 'store', name: '매점', icon: '🏪' },
-  { id: 'pool', name: '수영장', icon: '🏊' },
-  { id: 'pet', name: '반려동물 동반', icon: '🐾' },
-]
+// --- 2. 상수 및 기본 데이터 ---
+const router = useRouter()
 const weekDays = [
   { label: '일', val: '0' },
   { label: '월', val: '1' },
@@ -41,7 +16,7 @@ const weekDays = [
   { label: '토', val: '6' },
 ]
 
-// --- 반응형 상태 (Reactive State) ---
+// --- 3. 반응형 상태 (Reactive State) ---
 const campsiteData = reactive({
   name: '',
   address: '',
@@ -58,21 +33,31 @@ const policy = reactive({
   manner_time_start: '22:00',
   manner_time_end: '07:00',
 })
-const sites = ref<Site[]>([])
-const pricingRules = ref<PricingRule[]>([])
-const selectedAmenities = ref<string[]>([])
-const images = ref<ImageFile[]>([])
+const sites = ref<ISite[]>([])
+const pricingRules = ref<IPricingRule[]>([])
+const allAmenities = ref<IAmenity[]>([])
+const selectedAmenities = ref<number[]>([])
+const images = ref<IImageFile[]>([])
 const isLoading = ref(false)
-const dateError = ref('')
+const errorMessage = ref('')
+const isDragOver = ref(false)
 
-// --- 동적 리스트 관리 ---
-const addSite = () => {
-  sites.value.push({ id: Date.now(), name: '', camp_type: '오토캠핑', base_price: null })
+// --- 4. 로직 (함수) ---
+
+const fetchAmenities = async () => {
+  try {
+    const response = await apiClient.get<IAmenity[]>('/amenities/')
+    allAmenities.value = response.data
+  } catch (error) {
+    console.error('편의시설 목록 로딩 실패:', error)
+  }
 }
-const removeSite = (index: number) => {
-  sites.value.splice(index, 1)
-}
-const addRule = () => {
+
+// 동적 리스트 관리
+const addSite = () =>
+  sites.value.push({ id: Date.now(), name: '', camp_type: '오토캠핑', base_price: '0' })
+const removeSite = (index: number) => sites.value.splice(index, 1)
+const addRule = () =>
   pricingRules.value.push({
     id: Date.now(),
     name: '',
@@ -81,82 +66,130 @@ const addRule = () => {
     day_of_week: [],
     extra_charge: null,
   })
-}
-const removeRule = (index: number) => {
-  pricingRules.value.splice(index, 1)
-}
+const removeRule = (index: number) => pricingRules.value.splice(index, 1)
 
-// --- 파일 핸들링 ---
-const handleFileSelect = (event: Event) => {
-  const target = event.target as HTMLInputElement
-  const files = Array.from(target.files || [])
-  files.forEach((file) => {
-    images.value.push({
-      id: Date.now() + Math.random(),
-      file,
-      previewSrc: URL.createObjectURL(file),
-    })
+// 파일 핸들링
+const addFiles = (files: FileList) => {
+  Array.from(files).forEach((file) => {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      images.value.push({
+        id: Date.now() + Math.random(),
+        file: file,
+        previewSrc: e.target?.result as string,
+        status: 'pending',
+        progress: 0,
+      })
+    }
+    reader.readAsDataURL(file)
   })
 }
-
-// --- 유효성 검사 및 제출 ---
-const validateDates = () => {
-  const today = new Date()
-  today.setHours(0, 0, 0, 0) // 시간 정보를 제거하여 날짜만 비교
-
-  const checkInDate = campsiteData.check_in ? new Date(campsiteData.check_in) : null
-  const checkOutDate = campsiteData.check_out ? new Date(campsiteData.check_out) : null
-
-  dateError.value = '' // 에러 메시지 초기화
-
-  if (checkInDate && checkOutDate && checkInDate >= checkOutDate) {
-    dateError.value = '체크아웃 날짜는 체크인 날짜보다 이후여야 합니다.'
-    return false
-  }
-  if (checkInDate && checkInDate >= today) {
-    dateError.value = '체크인 날짜는 오늘 이전이어야 합니다.'
-    return false
-  }
-  if (checkOutDate && checkOutDate >= today) {
-    dateError.value = '체크아웃 날짜는 오늘 이전이어야 합니다.'
-    return false
-  }
-  return true
+const handleFileSelect = (event: Event) => addFiles((event.target as HTMLInputElement).files!)
+const removeImage = (id: number) => {
+  images.value = images.value.filter((img) => img.id !== id)
+}
+const drop = (event: DragEvent) => {
+  isDragOver.value = false
+  addFiles(event.dataTransfer!.files)
 }
 
+// 유효성 검사
 const isFormValid = computed(() => {
-  const basicInfoValid = campsiteData.name && campsiteData.address && campsiteData.price
-  return basicInfoValid && validateDates()
+  return (
+    campsiteData.name.trim() !== '' &&
+    campsiteData.address.trim() !== '' &&
+    images.value.length >= 1
+  )
 })
 
-const handleSubmit = () => {
+// 폼 제출 (성공했던 로직 적용)
+const createCampsite = async () => {
   if (!isFormValid.value) {
-    alert('필수 항목을 모두 입력하고 날짜를 올바르게 선택해주세요.')
+    errorMessage.value = '캠핑장 이름, 주소, 그리고 최소 1개 이상의 이미지는 필수입니다.'
     return
   }
+  errorMessage.value = ''
   isLoading.value = true
 
-  // 백엔드로 보낼 데이터 최종 조합
-  const finalData = {
-    ...campsiteData,
-    policy: { ...policy },
-    sites: [...sites.value],
-    amenities: [...selectedAmenities.value],
-    pricing_rules: pricingRules.value.map((rule) => ({
-      ...rule,
-      day_of_week: rule.day_of_week.join(','), // 배열을 쉼표로 구분된 문자열로 변환
-    })),
-    // images는 별도로 FormData로 처리 필요
-  }
+  try {
+    const token = localStorage.getItem('accessToken')
+    if (!token) throw new Error('인증 토큰이 없습니다. 로그인 후 이용해주세요.')
 
-  console.log('Submitting Data:', JSON.stringify(finalData, null, 2))
+    // 1. 업로드할 이미지들에 대한 URL 요청
+    const pendingImages = images.value.filter((img) => img.status === 'pending')
+    const urlPromises = pendingImages.map(() =>
+      apiClient
+        .post<{ id: string; uploadURL: string }>(
+          '/campsites/images/upload-url/',
+          {},
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          },
+        )
+        .then((res) => res.data),
+    )
+    const urlResults = await Promise.all(urlPromises)
 
-  // API 호출 시뮬레이션
-  setTimeout(() => {
+    // 2. 발급받은 URL로 각 이미지 파일 업로드
+    const uploadPromises = pendingImages.map((image, index) => {
+      image.status = 'uploading'
+      const formData = new FormData()
+      formData.append('file', image.file)
+      // fetch를 사용해 직접 업로드 (CORS 설정 필요)
+      return fetch(urlResults[index].uploadURL, {
+        method: 'POST',
+        body: formData,
+      })
+        .then((res) => {
+          if (res.ok) {
+            image.status = 'success'
+            image.progress = 100
+            image.cloudflareId = urlResults[index].id
+          } else {
+            image.status = 'error'
+            throw new Error(`'${image.file.name}' 이미지 업로드 실패`)
+          }
+        })
+        .catch((err) => {
+          image.status = 'error'
+          throw err
+        })
+    })
+    await Promise.all(uploadPromises)
+
+    if (images.value.some((img) => img.status === 'error')) {
+      throw new Error(
+        '일부 이미지 업로드에 실패했습니다. 실패한 이미지를 삭제 후 다시 시도해주세요.',
+      )
+    }
+
+    // 3. 모든 정보 최종 제출
+    const finalPayload = {
+      ...campsiteData,
+      policy: { ...policy },
+      sites: [...sites.value],
+      amenities: [...selectedAmenities.value],
+      pricing_rules: pricingRules.value.map((r) => ({
+        ...r,
+        day_of_week: r.day_of_week.join(','),
+      })),
+      image_ids: images.value.map((img) => img.cloudflareId),
+    }
+
+    await apiClient.post('/campsites/', finalPayload, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+
+    alert('🎉 캠핑장이 성공적으로 등록되었습니다!')
+    router.push({ name: 'home' })
+  } catch (error: any) {
+    errorMessage.value = error.message
+  } finally {
     isLoading.value = false
-    alert('캠핑장 후기 등록이 완료되었습니다! (콘솔 로그 확인)')
-  }, 2000)
+  }
 }
+
+onMounted(fetchAmenities)
 </script>
 
 <template>
@@ -167,7 +200,7 @@ const handleSubmit = () => {
         <p class="mt-4 text-lg text-gray-600">다녀오신 캠핑장의 정보를 상세히 기록해주세요.</p>
       </div>
 
-      <form @submit.prevent="handleSubmit" class="space-y-10">
+      <form @submit.prevent="createCampsite" class="space-y-10">
         <section class="p-8 bg-white rounded-xl shadow-lg border border-gray-200">
           <h2 class="text-2xl font-bold text-gray-800 mb-2">🏕️ 기본 정보</h2>
           <p class="text-gray-600 mb-6">캠핑을 다녀온 경험을 바탕으로 정보를 입력해주세요.</p>
@@ -177,14 +210,14 @@ const handleSubmit = () => {
               v-model="campsiteData.name"
               type="text"
               placeholder="캠핑장 이름"
-              class="input-field"
+              class="input-new-field"
               required
             />
             <input
               v-model="campsiteData.address"
               type="text"
               placeholder="주소"
-              class="input-field"
+              class="input-new-field"
               required
             />
             <div class="md:col-span-2">
@@ -192,21 +225,21 @@ const handleSubmit = () => {
                 v-model="campsiteData.description"
                 rows="4"
                 placeholder="캠핑장 설명 (특징, 주변 경관 등)"
-                class="input-field"
+                class="input-new-field"
               ></textarea>
             </div>
             <input
               v-model.number="campsiteData.price"
               type="number"
               placeholder="총 숙박 요금 (원)"
-              class="input-field"
+              class="input-new-field"
               required
             />
             <input
               v-model="campsiteData.contact_number"
               type="tel"
               placeholder="대표 연락처 (선택)"
-              class="input-field"
+              class="input-new-field"
             />
 
             <div>
@@ -215,7 +248,7 @@ const handleSubmit = () => {
                 v-model="campsiteData.check_in"
                 @change="validateDates"
                 type="date"
-                class="input-field"
+                class="input-new-field"
                 required
               />
             </div>
@@ -225,7 +258,7 @@ const handleSubmit = () => {
                 v-model="campsiteData.check_out"
                 @change="validateDates"
                 type="date"
-                class="input-field"
+                class="input-new-field"
                 required
               />
             </div>
@@ -242,7 +275,7 @@ const handleSubmit = () => {
                 v-model="campsiteData.layout_image_url"
                 type="text"
                 placeholder="사이트 배치도 이미지 URL (선택)"
-                class="input-field"
+                class="input-new-field"
               />
             </div>
           </div>
@@ -253,19 +286,19 @@ const handleSubmit = () => {
           <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">체크인 시간</label>
-              <input v-model="policy.check_in_time" type="time" class="input-field" />
+              <input v-model="policy.check_in_time" type="time" class="input-new-field" />
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">체크아웃 시간</label>
-              <input v-model="policy.check_out_time" type="time" class="input-field" />
+              <input v-model="policy.check_out_time" type="time" class="input-new-field" />
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">매너타임 시작</label>
-              <input v-model="policy.manner_time_start" type="time" class="input-field" />
+              <input v-model="policy.manner_time_start" type="time" class="input-new-field" />
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">매너타임 종료</label>
-              <input v-model="policy.manner_time_end" type="time" class="input-field" />
+              <input v-model="policy.manner_time_end" type="time" class="input-new-field" />
             </div>
           </div>
         </section>
@@ -284,7 +317,8 @@ const handleSubmit = () => {
                 v-model="selectedAmenities"
                 class="h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
               />
-              <span class="text-gray-700">{{ amenity.icon }} {{ amenity.name }}</span>
+              <img :src="amenity.icon_url" :alt="amenity.name" class="w-6 h-6" />
+              <span class="text-gray-700">{{ amenity.name }}</span>
             </label>
           </div>
         </section>
@@ -295,11 +329,16 @@ const handleSubmit = () => {
             type="file"
             multiple
             @change="handleFileSelect"
+            accept="image/*"
             class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100"
           />
           <div v-if="images.length" class="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
             <div v-for="image in images" :key="image.id" class="relative">
-              <img :src="image.previewSrc" class="w-full h-40 object-cover rounded-lg shadow-md" />
+              <img
+                :src="image.previewSrc"
+                :alt="image.file.name"
+                class="w-full h-40 object-cover rounded-lg shadow-md"
+              />
             </div>
           </div>
         </section>
@@ -307,7 +346,9 @@ const handleSubmit = () => {
         <section class="p-8 bg-white rounded-xl shadow-lg border border-gray-200">
           <div class="flex justify-between items-center mb-6">
             <h2 class="text-2xl font-bold text-gray-800">⛺ 사이트 관리</h2>
-            <button type="button" @click="addSite" class="btn btn-secondary">+ 사이트 추가</button>
+            <button type="button" @click="addSite" class="btn-new btn-new-secondary">
+              + 사이트 추가
+            </button>
           </div>
           <div class="space-y-4">
             <div
@@ -319,24 +360,24 @@ const handleSubmit = () => {
                 v-model="site.name"
                 type="text"
                 placeholder="사이트 이름 (예: A1)"
-                class="input-field"
+                class="input-new-field"
               />
               <input
                 v-model="site.camp_type"
                 type="text"
                 placeholder="캠프 타입 (예: 글램핑)"
-                class="input-field"
+                class="input-new-field"
               />
               <input
-                v-model.number="site.base_price"
-                type="number"
+                v-model="site.base_price"
+                type="text"
                 placeholder="기본 요금"
-                class="input-field"
+                class="input-new-field"
               />
               <button
                 type="button"
                 @click="removeSite(index)"
-                class="btn btn-danger justify-self-end"
+                class="btn-new btn-new-danger justify-self-end"
               >
                 삭제
               </button>
@@ -350,7 +391,9 @@ const handleSubmit = () => {
         <section class="p-8 bg-white rounded-xl shadow-lg border border-gray-200">
           <div class="flex justify-between items-center mb-6">
             <h2 class="text-2xl font-bold text-gray-800">💰 추가 요금 규칙</h2>
-            <button type="button" @click="addRule" class="btn btn-secondary">+ 규칙 추가</button>
+            <button type="button" @click="addRule" class="btn-new btn-new-secondary">
+              + 규칙 추가
+            </button>
           </div>
           <div class="space-y-4">
             <div
@@ -363,18 +406,18 @@ const handleSubmit = () => {
                   v-model="rule.name"
                   type="text"
                   placeholder="규칙 이름 (예: 주말/성수기)"
-                  class="input-field md:col-span-1"
+                  class="input-new-field md:col-span-1"
                 />
                 <input
                   v-model.number="rule.extra_charge"
                   type="number"
                   placeholder="추가 요금"
-                  class="input-field md:col-span-1"
+                  class="input-new-field md:col-span-1"
                 />
                 <button
                   type="button"
                   @click="removeRule(index)"
-                  class="btn btn-danger md:col-span-1 md:justify-self-end"
+                  class="btn-new btn-new-danger md:col-span-1 md:justify-self-end"
                 >
                   삭제
                 </button>
@@ -384,13 +427,13 @@ const handleSubmit = () => {
                   v-model="rule.start_date"
                   type="date"
                   placeholder="시작일"
-                  class="input-field"
+                  class="input-new-field"
                 />
                 <input
                   v-model="rule.end_date"
                   type="date"
                   placeholder="종료일"
-                  class="input-field"
+                  class="input-new-field"
                 />
               </div>
               <div class="flex items-center space-x-2 flex-wrap">
@@ -425,7 +468,7 @@ const handleSubmit = () => {
           <button
             type="submit"
             :disabled="!isFormValid || isLoading"
-            class="w-full btn btn-primary text-lg"
+            class="w-full btn-new btn-new-primary text-lg"
           >
             <span v-if="isLoading">
               <svg
@@ -458,4 +501,11 @@ const handleSubmit = () => {
   </div>
 </template>
 
-<style></style>
+<style scoped>
+/* 템플릿의 가독성을 위해 공통 스타일을 @apply로 정의 */
+/* input-field */
+/* .btn */
+/* btn-primary
+btn-secondary
+danger */
+</style>

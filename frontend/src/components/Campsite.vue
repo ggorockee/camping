@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { render } from 'timeago.js'
-import type { ICampsite } from '@/types/api' // Campsite 인터페이스 경로
+import type { ICampsiteListItem } from '@/types/api' // Campsite 인터페이스 경로
 import { RouterLink } from 'vue-router'
 
 // Prop 타입 안전성 확보
-const props = defineProps<{ campsite: ICampsite }>()
+const props = defineProps<{ campsite: ICampsiteListItem }>()
 
 // timeago용 element 레퍼런스
 const timeagoElement = ref<HTMLElement | null>(null)

@@ -2,22 +2,29 @@
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import apiClient from '@/api'
-import type { ICampsite } from '@/types/api'
+import type { ICampsiteDetail } from '@/types/api'
 
 // 1. 라우트 정보에 접근하기 위해 useRoute 훅 사용
 const route = useRoute()
-const campsite = ref<ICampsite | null>(null)
+const campsite = ref<ICampsiteDetail | null>(null)
 const loading = ref(true)
 const error = ref<string | null>(null)
 
-// 2. 단일 캠핑장 데이터를 불러오는 함수
+// --- 이미지 갤러리 상태 ---
+const mainImage = ref<string>('')
+
+// --- 데이터 로딩 ---
 const fetchCampsite = async () => {
   // URL 파라미터에서 id를 가져옴 (예: /campsites/1 -> '1')
   const campsiteId = route.params.id
 
   try {
-    const response = await apiClient.get<ICampsite>(`/campsites/${campsiteId}/`)
+    const response = await apiClient.get<ICampsiteDetail>(`/campsites/${campsiteId}/`)
     campsite.value = response.data
+    // 갤러리의 메인 이미지를 첫 번째 이미지로 초기화
+    if (response.data.images && response.data.images.length > 0) {
+      mainImage.value = response.data.images[0].cloudflare_id
+    }
   } catch (err) {
     console.error('캠핑장 상세 정보를 불러오는 중 오류 발생!!:', err)
     error.value = '데이터를 불러오는 데 실패했군!!.'
@@ -26,22 +33,152 @@ const fetchCampsite = async () => {
   }
 }
 
+// --- 헬퍼 함수 ---
+const formatTime = (timeStr: string) => timeStr.substring(0, 5)
+
 // 3. 컴포넌트가 마운트될 때 데이터 요청 함수 실행
 onMounted(fetchCampsite)
 </script>
 
 <template>
-  <main class="pt-24 px-6">
-    <div v-if="loading" class="text-center">
-      <p>데이터를 불러오는 중입니다...</p>
+  <div class="bg-gray-50 font-sans">
+    <div v-if="loading" class="min-h-screen flex items-center justify-center">
+      <p class="text-lg text-gray-600">데이터를 불러오는 중입니다...</p>
+    </div>
+    <div v-else-if="error" class="min-h-screen flex items-center justify-center">
+      <p class="text-lg text-red-500">{{ error }}</p>
     </div>
 
-    <div v-else-if="error" class="text-center text-red-500">
-      <p>{{ error }}</p>
-    </div>
+    <div v-else-if="campsite" class="container mx-auto max-w-6xl py-12 px-4 mt-16">
+      <header class="mb-8">
+        <h1 class="text-4xl md:text-5xl font-extrabold text-gray-900">{{ campsite.name }}</h1>
+        <div class="mt-4 flex items-center space-x-4 text-gray-600">
+          <span class="flex items-center">
+            <svg class="w-5 h-5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+              ></path>
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+              ></path>
+            </svg>
+            {{ campsite.address }}
+          </span>
+          <span class="flex items-center">
+            <svg class="w-5 h-5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+              ></path>
+            </svg>
+            by {{ campsite.owner.username }}
+          </span>
+        </div>
+      </header>
 
-    <div v-else-if="campsite">
-      <h1 class="text-4xl font-bold">{{ campsite.name }}</h1>
+      <section v-if="campsite.images && campsite.images.length" class="mb-10">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+          <div class="md:col-span-2 rounded-xl overflow-hidden shadow-lg">
+            <img :src="mainImage" alt="Main campsite view" class="w-full h-96 object-cover" />
+          </div>
+          <div
+            v-for="image in campsite.images.slice(1, 5)"
+            :key="image.id"
+            class="rounded-xl overflow-hidden shadow-lg cursor-pointer"
+            @click="mainImage = image.cloudflare_id"
+          >
+            <img :src="image.cloudflare_id" alt="Thumbnail view" class="w-full h-40 object-cover" />
+          </div>
+        </div>
+      </section>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-10">
+        <div class="lg:col-span-2 space-y-10">
+          <section class="p-8 bg-white rounded-xl shadow-lg border border-gray-200">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">📝 캠핑장 소개</h2>
+            <p class="text-gray-700 leading-relaxed whitespace-pre-line">
+              {{ campsite.description }}
+            </p>
+          </section>
+
+          <section class="p-8 bg-white rounded-xl shadow-lg border border-gray-200">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">🛁 편의시설</h2>
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+              <div
+                v-for="amenity in campsite.amenities"
+                :key="amenity.id"
+                class="flex items-center space-x-3"
+              >
+                <img :src="amenity.icon_url" alt="" class="w-6 h-6" />
+                <span class="text-gray-700">{{ amenity.name }}</span>
+              </div>
+            </div>
+          </section>
+
+          <section
+            v-if="campsite.policy"
+            class="p-8 bg-white rounded-xl shadow-lg border border-gray-200"
+          >
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">🕒 운영 정책</h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+              <div>
+                <p class="text-sm font-medium text-gray-500">체크인</p>
+                <p class="text-xl font-semibold text-gray-900">
+                  {{ formatTime(campsite.policy.check_in_time) }}
+                </p>
+              </div>
+              <div>
+                <p class="text-sm font-medium text-gray-500">체크아웃</p>
+                <p class="text-xl font-semibold text-gray-900">
+                  {{ formatTime(campsite.policy.check_out_time) }}
+                </p>
+              </div>
+              <div>
+                <p class="text-sm font-medium text-gray-500">매너타임 시작</p>
+                <p class="text-xl font-semibold text-gray-900">
+                  {{ formatTime(campsite.policy.manner_time_start) }}
+                </p>
+              </div>
+              <div>
+                <p class="text-sm font-medium text-gray-500">매너타임 종료</p>
+                <p class="text-xl font-semibold text-gray-900">
+                  {{ formatTime(campsite.policy.manner_time_end) }}
+                </p>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <aside class="lg:col-span-1">
+          <div class="sticky top-28 p-6 bg-white rounded-xl shadow-lg border border-gray-200">
+            <div class="mb-4">
+              <p class="text-2xl font-bold">
+                ₩{{ campsite.price.toLocaleString() }}
+                <span class="text-base font-normal text-gray-600"
+                  >/ {{ campsite.stay_nights }}박</span
+                >
+              </p>
+              <p class="text-sm text-gray-500 mt-1">
+                {{ campsite.check_in }} ~ {{ campsite.check_out }}
+              </p>
+            </div>
+            <button class="w-full action-btn action-btn-primary text-lg">📞 연락하기</button>
+            <p class="text-xs text-gray-500 mt-4 text-center">
+              연락처: {{ campsite.contact_number || '정보 없음' }}
+            </p>
+          </div>
+        </aside>
+      </div>
     </div>
-  </main>
+  </div>
 </template>
+
+<style scoped></style>

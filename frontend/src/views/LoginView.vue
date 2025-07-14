@@ -99,7 +99,7 @@ const schema = yup.object({
   password: yup
     .string()
     .required('Password is required')
-    .min(10, 'Password must be more than 8 chars'),
+    .min(6, 'Password must be more than 8 chars'),
 })
 
 // 2) useForm으로 전체 컨텍스트 생성
