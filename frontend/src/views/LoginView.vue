@@ -4,27 +4,31 @@
       <h1 class="text-2xl font-semibold text-gray-900 mb-6">What's your email?</h1>
       <form @submit.prevent="onSubmit">
         <!-- Input Field -->
-        <input
-          id="email"
-          v-model="email"
-          type="text"
-          placeholder="Enter email"
-          class="w-full h-10 px-3 mb-4 rounded-md bg-gray-100 text-gray-700 placeholder-gray-500 focus:outline-none"
-        />
-        <span v-if="emailError" class="font-medium text-red-500 text-left">
-          {{ emailError }}
-        </span>
+        <div class="mb-6">
+          <input
+            id="email"
+            v-model="email"
+            type="text"
+            placeholder="Enter email"
+            class="w-full h-10 px-3 rounded-md bg-gray-100 text-gray-700 placeholder-gray-500 focus:outline-none"
+          />
+          <span v-if="emailError" class="block mt-1 text-xs text-red-500 text-left">
+            {{ emailError }}
+          </span>
+        </div>
 
-        <input
-          id="password"
-          v-model="password"
-          type="password"
-          placeholder="input your password"
-          class="w-full h-10 px-3 mb-4 rounded-md bg-gray-100 text-gray-700 placeholder-gray-500 focus:outline-none"
-        />
-        <span v-if="passwordError" class="font-medium text-red-500 text-left">
-          {{ passwordError }}
-        </span>
+        <div class="mb-4">
+          <input
+            id="password"
+            v-model="password"
+            type="password"
+            placeholder="input your password"
+            class="w-full h-10 px-3 rounded-md bg-gray-100 text-gray-700 placeholder-gray-500 focus:outline-none"
+          />
+          <span v-if="passwordError" class="block mt-1 text-xs text-red-500 text-left">
+            {{ passwordError }}
+          </span>
+        </div>
         <!-- Continue Button -->
         <button
           type="submit"
