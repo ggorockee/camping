@@ -2,7 +2,7 @@
 
 # ----------------- STAGE 1: 빌드 환경 (Builder) -----------------
 # Node.js 18-alpine 이미지를 빌드 환경으로 사용합니다. 'alpine' 버전은 가벼움
-FROM node:lts-alpine3.21 AS builder
+FROM node:lts-alpine AS builder
 
 # 컨테이너 내의 작업 디렉토리를 설정합니다.
 WORKDIR /app
@@ -23,7 +23,7 @@ RUN npm run build
 
 # ----------------- STAGE 2: 프로덕션 환경 (Production) -----------------
 # 경량 Nginx 이미지를 최종 배포 환경으로 사용
-FROM nginx:mainline-alpine3.22
+FROM nginx:mainline-alpine AS production
 
 RUN apk add --no-cache nginx-module-geoip
 
