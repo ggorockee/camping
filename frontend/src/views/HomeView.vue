@@ -1,6 +1,6 @@
 <!-- src/views/HomeView.vue -->
 <script setup lang="ts">
-import CampsiteList from '@/components/CampsiteList.vue'
+import CampsiteList from '@/components/CampSiteList.vue'
 </script>
 
 <template>

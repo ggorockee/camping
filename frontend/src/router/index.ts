@@ -1,9 +1,9 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import LoginView from '../views/LoginView.vue'
-import CampsiteNew from '../views/CampsiteNew.vue'
+import CampsiteNew from '../views/CampSiteNew.vue'
 import RegisterView from '../views/RegisterView.vue'
-import CampsiteDetailView from '../views/CampsiteDetailView.vue'
+import CampsiteDetailView from '../views/CampSiteDetailView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
