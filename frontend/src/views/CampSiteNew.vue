@@ -40,7 +40,7 @@ const selectedAmenities = ref<number[]>([])
 const images = ref<IImageFile[]>([])
 const isLoading = ref(false)
 const errorMessage = ref('')
-const isDragOver = ref(false)
+// const isDragOver = ref(false)
 const dateError = ref('')
 // --- 4. 로직 (함수) ---
 
@@ -85,13 +85,13 @@ const addFiles = (files: FileList) => {
   })
 }
 const handleFileSelect = (event: Event) => addFiles((event.target as HTMLInputElement).files!)
-const removeImage = (id: number) => {
-  images.value = images.value.filter((img) => img.id !== id)
-}
-const drop = (event: DragEvent) => {
-  isDragOver.value = false
-  addFiles(event.dataTransfer!.files)
-}
+// const removeImage = (id: number) => {
+//   images.value = images.value.filter((img) => img.id !== id)
+// }
+// const drop = (event: DragEvent) => {
+//   isDragOver.value = false
+//   addFiles(event.dataTransfer!.files)
+// }
 
 // 유효성 검사
 const isFormValid = computed(() => {
