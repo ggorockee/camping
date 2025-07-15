@@ -12,15 +12,15 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         model = get_user_model()
         fields = ("email", "username", "password", "phone_number")
 
-    # def create(self, validated_data):
-    #     # ModelSerializer의 create 메소드를 오버라이드하여 비밀번호를 해싱
-    #     user = User.objects.create_user(
-    #         username=validated_data["username"],
-    #         email=validated_data["email"],
-    #         password=validated_data["password"],
-    #         phone_number=validated_data.get("phone_number", ""),
-    #     )
-    #     return user
+    def create(self, validated_data):
+        # ModelSerializer의 create 메소드를 오버라이드하여 비밀번호를 해싱
+        user = get_user_model().objects.create_user(
+            username=validated_data["username"],
+            email=validated_data["email"],
+            password=validated_data["password"],
+            phone_number=validated_data.get("phone_number", ""),
+        )
+        return user
 
 
 class UserSerializer(serializers.ModelSerializer):
