@@ -17,6 +17,15 @@ RUN npm install
 # 나머지 모든 소스 코드를 작업 디렉토리로 복사
 COPY . .
 
+
+# --build-arg로 전달받을 인자 선언
+ARG VITE_CLOUDFLARE_ACCOUNT_HASH
+
+# 전달받은 인자를 빌드 시점의 환경 변수로 설정
+ENV VITE_CLOUDFLARE_ACCOUNT_HASH=$VITE_CLOUDFLARE_ACCOUNT_HASH
+
+
+
 # React 애플리케이션을 프로덕션 모드로 빌드
 # 빌드 결과물은 /app/build 디렉토리에 생성
 RUN npm run build

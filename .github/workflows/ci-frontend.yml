@@ -47,6 +47,8 @@ jobs:
         with:
           context: ./frontend # Dockerfile이 있는 디렉토리
           push: true # 빌드 후 푸시 실행
+          build-args: |
+            VITE_CLOUDFLARE_ACCOUNT_HASH=${{ secrets.VITE_CLOUDFLARE_ACCOUNT_HASH }}
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/webapp-frontend-vue:${{ steps.meta.outputs.tag }}
 
   update-infra-repo:
