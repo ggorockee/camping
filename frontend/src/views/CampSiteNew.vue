@@ -196,8 +196,13 @@ const createCampsite = async () => {
 
     alert('🎉 캠핑장이 성공적으로 등록되었습니다!')
     router.push({ name: 'home' })
-  } catch (error: any) {
-    errorMessage.value = error.message
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      // error가 Error 객체일 경우, 안전하게 message 속성 사용
+      errorMessage.value = error.message
+    } else {
+      errorMessage.value = '알 수 없는 오류가 발생했습니다.'
+    }
   } finally {
     isLoading.value = false
   }
