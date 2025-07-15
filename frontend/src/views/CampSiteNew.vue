@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch, onUnmounted } from 'vue' // onUnmounted 추가
 import { useRouter } from 'vue-router'
 import apiClient from '@/api/index'
 import type { IAmenity, ISite, IPricingRule, IImageFile } from '@/types/api'
@@ -40,9 +40,40 @@ const selectedAmenities = ref<number[]>([])
 const images = ref<IImageFile[]>([])
 const isLoading = ref(false)
 const errorMessage = ref('')
-// const isDragOver = ref(false)
 const dateError = ref('')
-// --- 4. 로직 (함수) ---
+
+const isUploading = ref(false)
+const uploadProgress = ref(0)
+const showSuccessToast = ref(false)
+const successMessage = ref('')
+
+const totalImagesToUpload = ref(0)
+const uploadedImageCount = ref(0)
+
+// uploadedImageCount의 변화를 감시하여 uploadProgress를 계산
+watch(uploadedImageCount, (currentCount) => {
+  if (totalImagesToUpload.value > 0) {
+    uploadProgress.value = Math.round((currentCount / totalImagesToUpload.value) * 100)
+  } else {
+    uploadProgress.value = 0
+  }
+})
+
+// 👇 [수정] isUploading 상태를 감시하여 body 스크롤을 제어합니다.
+watch(isUploading, (isUploadingNow) => {
+  if (isUploadingNow) {
+    // 오버레이가 나타날 때 body 스크롤을 막습니다.
+    document.body.style.overflow = 'hidden'
+  } else {
+    // 오버레이가 사라질 때 body 스크롤을 복구합니다.
+    document.body.style.overflow = ''
+  }
+})
+
+// 👇 [추가] 컴포넌트가 언마운트될 때(페이지 이동 등) body 스타일을 확실히 복구합니다.
+onUnmounted(() => {
+  document.body.style.overflow = ''
+})
 
 const fetchAmenities = async () => {
   try {
@@ -85,13 +116,6 @@ const addFiles = (files: FileList) => {
   })
 }
 const handleFileSelect = (event: Event) => addFiles((event.target as HTMLInputElement).files!)
-// const removeImage = (id: number) => {
-//   images.value = images.value.filter((img) => img.id !== id)
-// }
-// const drop = (event: DragEvent) => {
-//   isDragOver.value = false
-//   addFiles(event.dataTransfer!.files)
-// }
 
 // 유효성 검사
 const isFormValid = computed(() => {
@@ -103,7 +127,6 @@ const isFormValid = computed(() => {
 })
 
 const validateDates = () => {
-  // 체크인과 체크아웃 날짜가 모두 선택되었는지 확인
   if (campsiteData.check_in && campsiteData.check_out) {
     const checkInDate = new Date(campsiteData.check_in)
     const checkOutDate = new Date(campsiteData.check_out)
@@ -111,12 +134,12 @@ const validateDates = () => {
     if (checkOutDate < checkInDate) {
       dateError.value = '체크아웃 날짜는 체크인 날짜보다 빠를 수 없습니다.'
     } else {
-      dateError.value = '' // 오류가 없으면 메시지 초기화
+      dateError.value = ''
     }
   }
 }
 
-// 폼 제출 (성공했던 로직 적용)
+// 폼 제출 로직
 const createCampsite = async () => {
   if (!isFormValid.value) {
     errorMessage.value = '캠핑장 이름, 주소, 그리고 최소 1개 이상의 이미지는 필수입니다.'
@@ -124,41 +147,39 @@ const createCampsite = async () => {
   }
   errorMessage.value = ''
   isLoading.value = true
+  isUploading.value = true
+
+  uploadProgress.value = 0
+  const pendingImages = images.value.filter((img) => img.status === 'pending')
+  totalImagesToUpload.value = pendingImages.length
+  uploadedImageCount.value = 0
 
   try {
     const token = localStorage.getItem('accessToken')
     if (!token) throw new Error('인증 토큰이 없습니다. 로그인 후 이용해주세요.')
 
-    // 1. 업로드할 이미지들에 대한 URL 요청
-    const pendingImages = images.value.filter((img) => img.status === 'pending')
     const urlPromises = pendingImages.map(() =>
       apiClient
-        .post<{ id: string; uploadURL: string }>(
-          '/campsites/images/upload-url/',
-          {},
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          },
-        )
+        .post<{
+          id: string
+          uploadURL: string
+        }>('/campsites/images/upload-url/', {}, { headers: { Authorization: `Bearer ${token}` } })
         .then((res) => res.data),
     )
     const urlResults = await Promise.all(urlPromises)
 
-    // 2. 발급받은 URL로 각 이미지 파일 업로드
     const uploadPromises = pendingImages.map((image, index) => {
       image.status = 'uploading'
       const formData = new FormData()
       formData.append('file', image.file)
-      // fetch를 사용해 직접 업로드 (CORS 설정 필요)
-      return fetch(urlResults[index].uploadURL, {
-        method: 'POST',
-        body: formData,
-      })
+
+      return fetch(urlResults[index].uploadURL, { method: 'POST', body: formData })
         .then((res) => {
           if (res.ok) {
             image.status = 'success'
             image.progress = 100
             image.cloudflareId = urlResults[index].id
+            uploadedImageCount.value++
           } else {
             image.status = 'error'
             throw new Error(`'${image.file.name}' 이미지 업로드 실패`)
@@ -177,7 +198,6 @@ const createCampsite = async () => {
       )
     }
 
-    // 3. 모든 정보 최종 제출
     const finalPayload = {
       ...campsiteData,
       policy: { ...policy },
@@ -187,22 +207,26 @@ const createCampsite = async () => {
         ...r,
         day_of_week: r.day_of_week.join(','),
       })),
-      image_ids: images.value.map((img) => img.cloudflareId),
+      image_ids: images.value.map((img) => img.cloudflareId).filter((id) => id),
     }
 
     await apiClient.post('/campsites/', finalPayload, {
       headers: { Authorization: `Bearer ${token}` },
     })
 
-    alert('🎉 캠핑장이 성공적으로 등록되었습니다!')
-    router.push({ name: 'home' })
+    isUploading.value = false // 성공 시에도 오버레이 숨김 처리
+    successMessage.value = '🎉 캠핑장이 성공적으로 등록되었습니다!'
+    showSuccessToast.value = true
+    setTimeout(() => {
+      router.push({ name: 'home' })
+    }, 2000)
   } catch (error: unknown) {
     if (error instanceof Error) {
-      // error가 Error 객체일 경우, 안전하게 message 속성 사용
       errorMessage.value = error.message
     } else {
       errorMessage.value = '알 수 없는 오류가 발생했습니다.'
     }
+    isUploading.value = false // 에러 시에도 오버레이 숨김 처리
   } finally {
     isLoading.value = false
   }
@@ -213,6 +237,46 @@ onMounted(fetchAmenities)
 
 <template>
   <div class="bg-gray-50 font-sans">
+    <div
+      v-if="isUploading"
+      class="fixed inset-0 bg-white/50 backdrop-blur-sm flex flex-col items-center justify-center z-50 transition-opacity duration-300"
+    >
+      <div class="w-full max-w-md text-center">
+        <h3 class="text-2xl font-bold text-gray-800 mb-4">이미지 업로드 중...</h3>
+        <p class="text-gray-600 mb-6">잠시만 기다려 주세요.</p>
+
+        <div class="w-full bg-gray-200 rounded-full h-6 overflow-hidden">
+          <div
+            class="bg-indigo-600 h-full rounded-full text-center text-white text-sm leading-6 transition-all duration-500"
+            :style="{ width: uploadProgress + '%' }"
+          >
+            {{ uploadProgress }}%
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div
+      v-if="showSuccessToast"
+      class="fixed top-5 right-5 bg-green-500 text-white py-3 px-6 rounded-lg shadow-xl z-50 flex items-center space-x-3"
+    >
+      <svg
+        class="w-6 h-6"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+        ></path>
+      </svg>
+      <span>{{ successMessage }}</span>
+    </div>
+
     <div class="container mx-auto max-w-5xl py-12 px-4 mt-12">
       <div class="text-center mb-12">
         <h1 class="text-4xl font-extrabold text-gray-900">캠핑 후기 등록</h1>
