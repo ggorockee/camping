@@ -88,8 +88,18 @@ class CampsiteCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.Campsite
-        fields = ("name", "description", "image_ids")
-
+        fields = (
+                    "name", 
+                    "description", 
+                    "image_ids", 
+                    "check_in", 
+                    "check_out", 
+                    "address", 
+                    "price", 
+                    "contact_number", 
+                    "layout_image_url",
+                )
+  
     def validate_image_ids(self, value):
         if len(value) < 3:
             raise serializers.ValidationError("최소 3장 이상의 사진 ID가 필요해요~")

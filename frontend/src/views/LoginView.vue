@@ -96,10 +96,8 @@ import type { ILoginPayload } from '@/types/api'
 // 1) 스키마 정의
 const schema = yup.object({
   email: yup.string().required('Email is required').email('Invalid email address'),
-  password: yup
-    .string()
-    .required('Password is required')
-    .min(6, 'Password must be more than 8 chars'),
+  password: yup.string().required('Password is required'),
+  // .min(1, 'Password must be more than 8 chars'),
 })
 
 // 2) useForm으로 전체 컨텍스트 생성
