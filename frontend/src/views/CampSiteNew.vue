@@ -41,7 +41,7 @@ const images = ref<IImageFile[]>([])
 const isLoading = ref(false)
 const errorMessage = ref('')
 const isDragOver = ref(false)
-
+const dateError = ref('')
 // --- 4. 로직 (함수) ---
 
 const fetchAmenities = async () => {
@@ -101,6 +101,20 @@ const isFormValid = computed(() => {
     images.value.length >= 1
   )
 })
+
+const validateDates = () => {
+  // 체크인과 체크아웃 날짜가 모두 선택되었는지 확인
+  if (campsiteData.check_in && campsiteData.check_out) {
+    const checkInDate = new Date(campsiteData.check_in)
+    const checkOutDate = new Date(campsiteData.check_out)
+
+    if (checkOutDate < checkInDate) {
+      dateError.value = '체크아웃 날짜는 체크인 날짜보다 빠를 수 없습니다.'
+    } else {
+      dateError.value = '' // 오류가 없으면 메시지 초기화
+    }
+  }
+}
 
 // 폼 제출 (성공했던 로직 적용)
 const createCampsite = async () => {

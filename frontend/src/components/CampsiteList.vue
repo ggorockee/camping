@@ -11,14 +11,14 @@
 import { onMounted, ref } from 'vue'
 import Campsite from '@/components/CampSite.vue'
 import apiClient from '@/api'
-import type { ICampsite, ICampsiteResponse } from '@/types/api'
+import type { ICampsiteListItem, ICampsiteListResponse } from '@/types/api'
 
-const campsites = ref<ICampsite[]>([])
+const campsites = ref<ICampsiteListItem[]>([])
 
 const fetchCampsites = async (): Promise<void> => {
   try {
     // define response type
-    const response = await apiClient.get<ICampsiteResponse>('/campsites/')
+    const response = await apiClient.get<ICampsiteListResponse>('/campsites/')
     campsites.value = response.data.results
   } catch (error: unknown) {
     console.error('캠핑장 데이터를 불러오는 중 오류가 발생:', error)
