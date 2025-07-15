@@ -119,7 +119,7 @@ export interface ICampsiteDetail {
   check_in: string // "YYYY-MM-DD"
   check_out: string // "YYYY-MM-DD"
   stay_nights: number
-  owner: { username: string } // 소유자 정보
+  owner: string // 소유자 정보
   images: ICampsiteImage[] // 이미지 목록
   sites: ISite[] // 사이트 목록
   amenities: IAmenity[] // 편의시설 목록 (M2M)

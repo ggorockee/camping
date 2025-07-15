@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import apiClient from '@/api'
 import type { ICampsiteDetail } from '@/types/api'
@@ -13,6 +13,27 @@ const error = ref<string | null>(null)
 // --- 이미지 갤러리 상태 ---
 const mainImage = ref<string>('')
 
+const accountHash = import.meta.env.VITE_CLOUDFLARE_ACCOUNT_HASH
+const publicVariant = import.meta.env.VITE_CLOUDFLARE_IMAGE_VARIANT || 'public'
+
+// Cloudflare 이미지 URL을 생성하는 헬퍼 함수
+const getImageUrl = (imageId: string, variant: string = publicVariant) => {
+  if (!accountHash) {
+    console.error('Cloudflare Account Hash가 .env 파일에 설정되지 않았습니다.')
+    return ''
+  }
+
+  return `https://imagedelivery.net/${accountHash}/${imageId}/${variant}`
+}
+
+// 이미지 URL 목록을 미리 계산하는 computed 속성
+const imageUrls = computed(() => {
+  if (!campsite.value || !campsite.value.images) {
+    return []
+  }
+  return campsite.value.images.map((image) => getImageUrl(image.cloudflare_id))
+})
+
 // --- 데이터 로딩 ---
 const fetchCampsite = async () => {
   // URL 파라미터에서 id를 가져옴 (예: /campsites/1 -> '1')
@@ -22,8 +43,8 @@ const fetchCampsite = async () => {
     const response = await apiClient.get<ICampsiteDetail>(`/campsites/${campsiteId}/`)
     campsite.value = response.data
     // 갤러리의 메인 이미지를 첫 번째 이미지로 초기화
-    if (response.data.images && response.data.images.length > 0) {
-      mainImage.value = response.data.images[0].cloudflare_id
+    if (imageUrls.value.length > 0) {
+      mainImage.value = imageUrls.value[0]
     }
   } catch (err) {
     console.error('캠핑장 상세 정보를 불러오는 중 오류 발생!!:', err)
@@ -79,23 +100,56 @@ onMounted(fetchCampsite)
                 d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
               ></path>
             </svg>
-            by {{ campsite.owner.username }}
+            by {{ campsite.owner }}
           </span>
         </div>
       </header>
 
-      <section v-if="campsite.images && campsite.images.length" class="mb-10">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-          <div class="md:col-span-2 rounded-xl overflow-hidden shadow-lg">
-            <img :src="mainImage" alt="Main campsite view" class="w-full h-96 object-cover" />
+      <section v-if="imageUrls.length" class="mb-10">
+        <div class="w-full space-y-2">
+          <div class="rounded-xl overflow-hidden shadow-lg">
+            <img
+              :src="mainImage"
+              alt="Main campsite view"
+              class="w-full aspect-video object-cover"
+            />
           </div>
-          <div
-            v-for="image in campsite.images.slice(1, 5)"
-            :key="image.id"
-            class="rounded-xl overflow-hidden shadow-lg cursor-pointer"
-            @click="mainImage = image.cloudflare_id"
-          >
-            <img :src="image.cloudflare_id" alt="Thumbnail view" class="w-full h-40 object-cover" />
+
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+            <div
+              v-for="imageUrl in imageUrls.slice(1, 5)"
+              :key="imageUrl"
+              class="group relative rounded-xl overflow-hidden shadow-lg cursor-pointer"
+              @click="mainImage = imageUrl"
+            >
+              <img
+                :src="imageUrl"
+                alt="Thumbnail view"
+                class="w-full h-32 md:h-40 object-cover transition-transform duration-300 group-hover:scale-110"
+              />
+
+              <div
+                class="absolute inset-0 bg-black/0 transition-all duration-300 group-hover:bg-black/40"
+              ></div>
+
+              <div
+                class="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+              >
+                <svg
+                  class="w-10 h-10 text-white"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke-width="1.5"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
+                  />
+                </svg>
+              </div>
+            </div>
           </div>
         </div>
       </section>
