@@ -13,6 +13,9 @@ const error = ref<string | null>(null)
 // --- 이미지 갤러리 상태 ---
 const mainImage = ref<string>('')
 
+// // 썸네일 캐러셀을 위한 상태 추가
+const thumbnailStartIndex = ref(1) // 썸네일은 전체 이미지 배열의 1번 인덱스부터 시작
+
 const accountHash = import.meta.env.VITE_CLOUDFLARE_ACCOUNT_HASH
 const publicVariant = import.meta.env.VITE_CLOUDFLARE_IMAGE_VARIANT || 'public'
 
@@ -33,6 +36,36 @@ const imageUrls = computed(() => {
   }
   return campsite.value.images.map((image) => getImageUrl(image.cloudflare_id))
 })
+
+// 현재 보여줄 썸네일 4개를 계산하는 computed 속성
+const visibleThumbnails = computed(() => {
+  // slice(시작 인덱스, 끝 인덱스)를 동적으로 계산
+  return imageUrls.value.slice(thumbnailStartIndex.value, thumbnailStartIndex.value + 4)
+})
+
+// 이전/다음 버튼 표시 여부를 결정하는 computed 속성
+const showPrevButton = computed(() => {
+  // 이미지가 5개 초과이고, 시작 인덱스가 1보다 클 때만 '이전' 버튼 표시
+  return imageUrls.value.length > 5 && thumbnailStartIndex.value > 1
+})
+
+const showNextButton = computed(() => {
+  // 현재 썸네일의 마지막 위치 + 1이 전체 이미지 수보다 작을 때만 '다음' 버튼 표시
+  return imageUrls.value.length > 5 && thumbnailStartIndex.value + 4 < imageUrls.value.length
+})
+
+// 썸네일 네비게이션 함수
+const nextThumbnails = () => {
+  if (showNextButton.value) {
+    thumbnailStartIndex.value++
+  }
+}
+
+const prevThumbnails = () => {
+  if (showPrevButton.value) {
+    thumbnailStartIndex.value--
+  }
+}
 
 // --- 데이터 로딩 ---
 const fetchCampsite = async () => {
@@ -115,122 +148,86 @@ onMounted(fetchCampsite)
             />
           </div>
 
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
-            <div
-              v-for="imageUrl in imageUrls.slice(1, 5)"
-              :key="imageUrl"
-              class="group relative rounded-xl overflow-hidden shadow-lg cursor-pointer"
-              @click="mainImage = imageUrl"
+          <div class="flex items-center space-x-2">
+            <button
+              v-if="showPrevButton"
+              @click="prevThumbnails"
+              class="flex-shrink-0 p-2 rounded-full bg-white/50 hover:bg-white/80 transition-colors shadow"
             >
-              <img
-                :src="imageUrl"
-                alt="Thumbnail view"
-                class="w-full h-32 md:h-40 object-cover transition-transform duration-300 group-hover:scale-110"
-              />
-
-              <div
-                class="absolute inset-0 bg-black/0 transition-all duration-300 group-hover:bg-black/40"
-              ></div>
-
-              <div
-                class="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+              <svg
+                class="w-6 h-6 text-gray-700"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
               >
-                <svg
-                  class="w-10 h-10 text-white"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke-width="1.5"
-                  stroke="currentColor"
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M15 19l-7-7 7-7"
+                ></path>
+              </svg>
+            </button>
+
+            <div class="flex-grow grid grid-cols-2 md:grid-cols-4 gap-2">
+              <div
+                v-for="imageUrl in visibleThumbnails"
+                :key="imageUrl"
+                class="group relative rounded-xl overflow-hidden shadow-lg cursor-pointer"
+                @click="mainImage = imageUrl"
+              >
+                <img
+                  :src="imageUrl"
+                  alt="Thumbnail view"
+                  class="w-full h-32 md:h-40 object-cover transition-transform duration-300 group-hover:scale-110"
+                />
+                <div
+                  class="absolute inset-0 bg-black/0 transition-all duration-300 group-hover:bg-black/40"
+                ></div>
+                <div
+                  class="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-300 group-hover:opacity-100"
                 >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
-                  />
-                </svg>
+                  <svg
+                    class="w-10 h-10 text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke-width="1.5"
+                    stroke="currentColor"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
+                    />
+                  </svg>
+                </div>
               </div>
             </div>
+
+            <button
+              v-if="showNextButton"
+              @click="nextThumbnails"
+              class="flex-shrink-0 p-2 rounded-full bg-white/50 hover:bg-white/80 transition-colors shadow"
+            >
+              <svg
+                class="w-6 h-6 text-gray-700"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 5l7 7-7 7"
+                ></path>
+              </svg>
+            </button>
           </div>
         </div>
       </section>
 
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-10">
-        <div class="lg:col-span-2 space-y-10">
-          <section class="p-8 bg-white rounded-xl shadow-lg border border-gray-200">
-            <h2 class="text-2xl font-bold text-gray-800 mb-4">📝 캠핑장 소개</h2>
-            <p class="text-gray-700 leading-relaxed whitespace-pre-line">
-              {{ campsite.description }}
-            </p>
-          </section>
-
-          <section class="p-8 bg-white rounded-xl shadow-lg border border-gray-200">
-            <h2 class="text-2xl font-bold text-gray-800 mb-6">🛁 편의시설</h2>
-            <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
-              <div
-                v-for="amenity in campsite.amenities"
-                :key="amenity.id"
-                class="flex items-center space-x-3"
-              >
-                <img :src="amenity.icon_url" alt="" class="w-6 h-6" />
-                <span class="text-gray-700">{{ amenity.name }}</span>
-              </div>
-            </div>
-          </section>
-
-          <section
-            v-if="campsite.policy"
-            class="p-8 bg-white rounded-xl shadow-lg border border-gray-200"
-          >
-            <h2 class="text-2xl font-bold text-gray-800 mb-6">🕒 운영 정책</h2>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-              <div>
-                <p class="text-sm font-medium text-gray-500">체크인</p>
-                <p class="text-xl font-semibold text-gray-900">
-                  {{ formatTime(campsite.policy.check_in_time) }}
-                </p>
-              </div>
-              <div>
-                <p class="text-sm font-medium text-gray-500">체크아웃</p>
-                <p class="text-xl font-semibold text-gray-900">
-                  {{ formatTime(campsite.policy.check_out_time) }}
-                </p>
-              </div>
-              <div>
-                <p class="text-sm font-medium text-gray-500">매너타임 시작</p>
-                <p class="text-xl font-semibold text-gray-900">
-                  {{ formatTime(campsite.policy.manner_time_start) }}
-                </p>
-              </div>
-              <div>
-                <p class="text-sm font-medium text-gray-500">매너타임 종료</p>
-                <p class="text-xl font-semibold text-gray-900">
-                  {{ formatTime(campsite.policy.manner_time_end) }}
-                </p>
-              </div>
-            </div>
-          </section>
-        </div>
-
-        <aside class="lg:col-span-1">
-          <div class="sticky top-28 p-6 bg-white rounded-xl shadow-lg border border-gray-200">
-            <div class="mb-4">
-              <p class="text-2xl font-bold">
-                ₩{{ campsite.price.toLocaleString() }}
-                <span class="text-base font-normal text-gray-600"
-                  >/ {{ campsite.stay_nights }}박</span
-                >
-              </p>
-              <p class="text-sm text-gray-500 mt-1">
-                {{ campsite.check_in }} ~ {{ campsite.check_out }}
-              </p>
-            </div>
-            <button class="w-full action-btn action-btn-primary text-lg">📞 연락하기</button>
-            <p class="text-xs text-gray-500 mt-4 text-center">
-              연락처: {{ campsite.contact_number || '정보 없음' }}
-            </p>
-          </div>
-        </aside>
-      </div>
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-10"></div>
     </div>
   </div>
 </template>
