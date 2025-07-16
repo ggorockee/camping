@@ -89,6 +89,7 @@ class CampsiteCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Campsite
         fields = (
+                    "id",
                     "name", 
                     "description", 
                     "image_ids", 
@@ -99,6 +100,8 @@ class CampsiteCreateSerializer(serializers.ModelSerializer):
                     "contact_number", 
                     "layout_image_url",
                 )
+        read_only_fields = ("id",)
+
   
     def validate_image_ids(self, value):
         if len(value) < 3:
@@ -106,8 +109,14 @@ class CampsiteCreateSerializer(serializers.ModelSerializer):
         return value
 
     def create(self, validated_data):
+        request = self.context.get("request")
+        if not request or not hasattr(request, "user"):
+            raise serializers.ValidationError("로그인된 사용자 정보가 필요합니다.")
+
+
         # 프론트에서 받은 'image_ids' 목록을 가져옴
         image_ids_list = validated_data.pop("image_ids")
+        validated_data["owner"] = request.user
 
         campsite = models.Campsite.objects.create(**validated_data)
 

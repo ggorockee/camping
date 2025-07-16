@@ -40,11 +40,11 @@ class CampsiteViewSet(viewsets.ModelViewSet):
         # 그 외의 경우 (retrieve, update 등)는 DetailSerializer 사용
         return serializers.CampsiteDetailSerializer
 
-    def perform_create(self, serializer):
-        """
-        create 요청 시, 현재 로그인된 사용자를 자동으로 owner로 설정.
-        """
-        serializer.save(owner=self.request.user)
+    # def perform_create(self, serializer):
+    #     """
+    #     create 요청 시, 현재 로그인된 사용자를 자동으로 owner로 설정.
+    #     """
+    #     serializer.save(owner=self.request.user)
 
 
 class ImageUploadURLView(APIView):
