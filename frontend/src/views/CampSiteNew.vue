@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import VueDatePicker from '@vuepic/vue-datepicker'
+import '@vuepic/vue-datepicker/dist/main.css'
 import { ref, reactive, computed, onMounted, watch, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import apiClient from '@/api/index'
@@ -6,6 +8,7 @@ import type { IAmenity, ISite, IPricingRule, IImageFile } from '@/types/api'
 
 // --- 1. 상태 관리 ---
 const router = useRouter()
+const dateRange = ref<[Date, Date] | null>(null)
 const campsiteData = reactive({
   name: '',
   address: '',
@@ -51,8 +54,23 @@ const isFormValid = computed(() => {
   return (
     campsiteData.name.trim() !== '' &&
     campsiteData.address.trim() !== '' &&
-    images.value.length >= 1
+    images.value.length >= 1 &&
+    dateRange.value !== null
   )
+})
+
+// dateRange가 변경되면 campsiteData.check_in/out 값을 업데이트
+watch(dateRange, (newRange) => {
+  if (newRange && newRange[0] && newRange[1]) {
+    // 날짜를 'YYYY-MM-DD' 형식의 문자열로 변환
+    const formatDate = (date: Date) => date.toISOString().split('T')[0]
+    campsiteData.check_in = formatDate(newRange[0])
+    campsiteData.check_out = formatDate(newRange[1])
+    dateError.value = ''
+  } else {
+    campsiteData.check_in = ''
+    campsiteData.check_out = ''
+  }
 })
 
 watch(uploadedImageCount, (currentCount) => {
@@ -113,13 +131,40 @@ const addFiles = (files: FileList | null) => {
 }
 const handleFileSelect = (event: Event) => addFiles((event.target as HTMLInputElement).files)
 
-const validateDates = () => {
-  if (campsiteData.check_in && campsiteData.check_out) {
-    const checkInDate = new Date(campsiteData.check_in)
-    const checkOutDate = new Date(campsiteData.check_out)
-    dateError.value =
-      checkOutDate < checkInDate ? '체크아웃 날짜는 체크인 날짜보다 빠를 수 없습니다.' : ''
+// const validateDates = () => {
+//   if (campsiteData.check_in && campsiteData.check_out) {
+//     const checkInDate = new Date(campsiteData.check_in)
+//     const checkOutDate = new Date(campsiteData.check_out)
+//     dateError.value =
+//       checkOutDate < checkInDate ? '체크아웃 날짜는 체크인 날짜보다 빠를 수 없습니다.' : ''
+//   }
+// }
+
+const formatDateRange = (dates: Date[]) => {
+  if (dates && dates.length === 2) {
+    const start = dates[0]
+    const end = dates[1]
+
+    const startYear = start.getFullYear()
+    const startMonth = start.getMonth() + 1
+    const startDate = start.getDate()
+
+    const endYear = end.getFullYear()
+    const endMonth = end.getMonth() + 1
+    const endDate = end.getDate()
+
+    // 시작일과 종료일이 같은 해, 같은 월일 경우 더 간결하게 표시
+    if (startYear === endYear && startMonth === endMonth) {
+      return `${startYear}년 ${startMonth}월 ${startDate}일 ~ ${endDate}일`
+    }
+    // 시작일과 종료일이 같은 해일 경우
+    else if (startYear === endYear) {
+      return `${startYear}년 ${startMonth}월 ${startDate}일 ~ ${endMonth}월 ${endDate}일`
+    }
+    // 그 외
+    return `${startYear}년 ${startMonth}월 ${startDate}일 ~ ${endYear}년 ${endMonth}월 ${endDate}일`
   }
+  return ''
 }
 
 async function createCampsite() {
@@ -293,32 +338,20 @@ async function createCampsite() {
               class="input-new-field"
             />
 
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">체크인 날짜</label>
-              <input
-                v-model="campsiteData.check_in"
-                @change="validateDates"
-                type="date"
-                class="input-new-field"
-                required
+            <div class="md:col-span-2">
+              <label class="block text-sm font-medium text-gray-700 mb-1">방문 날짜</label>
+              <VueDatePicker
+                v-model="dateRange"
+                range
+                :enable-time-picker="false"
+                placeholder="캠핑을 다녀온 날짜를 선택하세요"
+                :format="formatDateRange"
+                auto-apply
+                locale="ko"
+                month-name-format="long"
+                :max-date="new Date()"
+                :teleport="true"
               />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">체크아웃 날짜</label>
-              <input
-                v-model="campsiteData.check_out"
-                @change="validateDates"
-                type="date"
-                class="input-new-field"
-                required
-              />
-            </div>
-
-            <div
-              v-if="dateError"
-              class="md:col-span-2 text-sm text-red-600 bg-red-50 p-3 rounded-md"
-            >
-              {{ dateError }}
             </div>
 
             <div class="md:col-span-2">
@@ -553,6 +586,42 @@ async function createCampsite() {
 </template>
 
 <style scoped>
+:deep(.dp__input) {
+  padding: 0.75rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  line-height: 1.5rem; /* 라인 높이 추가 */
+  transition: all 0.2s;
+}
+
+/* 아이콘을 위한 왼쪽 여백 추가 */
+:deep(.dp__input_icon) {
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+/* 플레이스홀더와 선택된 값 모두를 포함하는 input 자체에 패딩을 적용합니다. */
+:deep(.dp__input_icon) {
+  left: 5px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+/* 플레이스홀더와 선택된 값 모두를 포함하는 input 자체에 패딩을 적용합니다. */
+:deep(.dp__input) {
+  /* ⭐️ 핵심: 아이콘 너비와 여유 공간만큼 왼쪽 패딩을 강제로 확보합니다. */
+  padding-left: 40px !important;
+
+  /* 기존 input 스타일 유지 */
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+  padding-right: 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+}
 /* 템플릿의 가독성을 위해 공통 스타일을 @apply로 정의 */
 /* input-field */
 /* .btn */

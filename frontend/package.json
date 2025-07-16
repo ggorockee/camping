@@ -17,6 +17,7 @@
     "@tailwindcss/cli": "^4.1.11",
     "@types/timeago": "^1.6.3",
     "@vee-validate/yup": "^4.15.1",
+    "@vuepic/vue-datepicker": "^11.0.2",
     "axios": "^1.10.0",
     "pinia": "^3.0.3",
     "timeago.js": "^4.0.2",
