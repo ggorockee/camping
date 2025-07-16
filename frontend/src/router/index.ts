@@ -31,7 +31,7 @@ const router = createRouter({
     {
       path: '/campsites/:id', // :id 부분이 동적으로 변경됩니다.
       name: 'campsite-detail', // 이 이름으로 링크를 쉽게 만들 수 있습니다.
-      component: CampSiteDetailView,
+      component: () => import('@/views/CampSiteDetailView.vue'),
     },
   ],
 })

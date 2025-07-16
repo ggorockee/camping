@@ -1,28 +1,27 @@
+// src/stores/authStore.ts (수정 후)
+
 import { defineStore } from 'pinia'
 import { ref, computed, type Ref } from 'vue'
-import { useRouter } from 'vue-router'
 import apiClient from '@/api/index'
 import type { IUser, ILoginPayload, ITokenResponse, IRegisterResponse } from '@/types/api'
 
 export const useAuthStore = defineStore('auth', () => {
-  const router = useRouter()
-
-  // State
+  // --- State ---
   const accessToken: Ref<string | null> = ref(localStorage.getItem('accessToken'))
   const user: Ref<IUser | null> = ref(null)
 
-  // Getters
-  const isAuthenticated = computed<boolean>(() => Boolean(accessToken.value))
+  // --- Getters ---
+  const isAuthenticated = computed<boolean>(() => !!user.value && !!accessToken.value)
   const username = computed<string>(() => user.value?.username ?? 'Guest')
 
-  // Helpers
+  // --- Helpers ---
   function setToken(token: string): void {
     accessToken.value = token
     localStorage.setItem('accessToken', token)
     apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`
   }
 
-  // Actions
+  // --- Actions ---
   async function fetchUser(): Promise<void> {
     if (!accessToken.value) return
 
@@ -35,7 +34,11 @@ export const useAuthStore = defineStore('auth', () => {
       user.value = response.data
     } catch (err) {
       console.error('Failed to fetch user:', err)
-      logout()
+      // 토큰이 유효하지 않으므로 상태를 초기화합니다.
+      accessToken.value = null
+      user.value = null
+      localStorage.removeItem('accessToken')
+      delete apiClient.defaults.headers.common['Authorization']
     }
   }
 
@@ -43,25 +46,21 @@ export const useAuthStore = defineStore('auth', () => {
     const response = await apiClient.post<ITokenResponse>('/users/token/', payload)
     setToken(response.data.access)
     await fetchUser()
-    await router.push('/')
+    // 페이지 이동 로직은 컴포넌트에서 처리하므로 여기서는 제거
   }
 
-  function logout(redirectPath = '/login'): void {
+  function logout(): void {
     accessToken.value = null
     user.value = null
     localStorage.removeItem('accessToken')
     delete apiClient.defaults.headers.common['Authorization']
-    alert('Logged out successfully.')
-    void router.push(redirectPath)
+    // alert 및 페이지 이동 로직은 컴포넌트에서 처리하므로 여기서는 제거
   }
 
   function registerSuccess(data: IRegisterResponse): void {
-    // 1. 응답으로 받은 유저 정보와 토큰을 상태에 저장
     user.value = data.user
     setToken(data.access_token)
-
-    // 2. 홈페이지로 리디렉션
-    router.push('/')
+    // 페이지 이동 로직은 컴포넌트에서 처리하므로 여기서는 제거
   }
 
   return {

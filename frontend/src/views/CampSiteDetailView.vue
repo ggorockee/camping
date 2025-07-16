@@ -227,7 +227,83 @@ onMounted(fetchCampsite)
         </div>
       </section>
 
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-10"></div>
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-10">
+        <div class="lg:col-span-2 space-y-10">
+          <section class="p-8 bg-white rounded-xl shadow-lg border border-gray-200">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">📝 캠핑장 소개</h2>
+            <p class="text-gray-700 leading-relaxed whitespace-pre-line">
+              {{ campsite.description }}
+            </p>
+          </section>
+
+          <section class="p-8 bg-white rounded-xl shadow-lg border border-gray-200">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">🛁 편의시설</h2>
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+              <div
+                v-for="amenity in campsite.amenities"
+                :key="amenity.id"
+                class="flex items-center space-x-3"
+              >
+                <img :src="amenity.icon_url" alt="" class="w-6 h-6" />
+                <span class="text-gray-700">{{ amenity.name }}</span>
+              </div>
+            </div>
+          </section>
+
+          <section
+            v-if="campsite.policy"
+            class="p-8 bg-white rounded-xl shadow-lg border border-gray-200"
+          >
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">🕒 운영 정책</h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+              <div>
+                <p class="text-sm font-medium text-gray-500">체크인</p>
+                <p class="text-xl font-semibold text-gray-900">
+                  {{ formatTime(campsite.policy.check_in_time) }}
+                </p>
+              </div>
+              <div>
+                <p class="text-sm font-medium text-gray-500">체크아웃</p>
+                <p class="text-xl font-semibold text-gray-900">
+                  {{ formatTime(campsite.policy.check_out_time) }}
+                </p>
+              </div>
+              <div>
+                <p class="text-sm font-medium text-gray-500">매너타임 시작</p>
+                <p class="text-xl font-semibold text-gray-900">
+                  {{ formatTime(campsite.policy.manner_time_start) }}
+                </p>
+              </div>
+              <div>
+                <p class="text-sm font-medium text-gray-500">매너타임 종료</p>
+                <p class="text-xl font-semibold text-gray-900">
+                  {{ formatTime(campsite.policy.manner_time_end) }}
+                </p>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <aside class="lg:col-span-1">
+          <div class="sticky top-28 p-6 bg-white rounded-xl shadow-lg border border-gray-200">
+            <div class="mb-4">
+              <p class="text-2xl font-bold">
+                ₩{{ campsite.price.toLocaleString() }}
+                <span class="text-base font-normal text-gray-600"
+                  >/ {{ campsite.stay_nights }}박</span
+                >
+              </p>
+              <p class="text-sm text-gray-500 mt-1">
+                {{ campsite.check_in }} ~ {{ campsite.check_out }}
+              </p>
+            </div>
+            <button class="w-full action-btn action-btn-primary text-lg">📞 연락하기</button>
+            <p class="text-xs text-gray-500 mt-4 text-center">
+              연락처: {{ campsite.contact_number || '정보 없음' }}
+            </p>
+          </div>
+        </aside>
+      </div>
     </div>
   </div>
 </template>
