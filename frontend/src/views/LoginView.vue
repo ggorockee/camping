@@ -10,13 +10,15 @@
       </div>
       <form @submit.prevent="onSubmit">
         <div class="mb-4">
+          <label for="email" class="block text-sm font-medium text-gray-700 mb-1">이메일</label>
           <input
             id="email"
             v-model="email"
-            type="text"
-            placeholder="Enter email"
-            class="w-full h-10 px-3 rounded-md bg-gray-100 text-gray-700 placeholder-gray-500 focus:outline-none"
+            type="email"
+            placeholder="example@email.com"
+            class="w-full h-10 px-3 rounded-md bg-gray-100 text-gray-700 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-400"
             :class="{ 'border border-red-500': emailError || loginError }"
+            :disabled="isLoading"
           />
           <span v-if="emailError" class="block mt-1 text-xs text-red-500 text-left">
             {{ emailError }}
@@ -24,23 +26,50 @@
         </div>
 
         <div class="mb-6">
+          <label for="password" class="block text-sm font-medium text-gray-700 mb-1"
+            >비밀번호</label
+          >
           <input
             id="password"
             v-model="password"
             type="password"
-            placeholder="input your password"
-            class="w-full h-10 px-3 rounded-md bg-gray-100 text-gray-700 placeholder-gray-500 focus:outline-none"
+            placeholder="비밀번호를 입력하세요"
+            class="w-full h-10 px-3 rounded-md bg-gray-100 text-gray-700 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-400"
             :class="{ 'border border-red-500': passwordError || loginError }"
+            :disabled="isLoading"
           />
           <span v-if="passwordError" class="block mt-1 text-xs text-red-500 text-left">
             {{ passwordError }}
           </span>
         </div>
+
         <button
           type="submit"
-          class="w-full h-10 mb-6 bg-black text-white rounded-md font-medium hover:bg-gray-800 transition"
+          :disabled="isLoading"
+          class="w-full h-10 mb-6 flex items-center justify-center bg-black text-white rounded-md font-medium hover:bg-gray-800 transition disabled:bg-gray-400"
         >
-          Continue
+          <span v-if="!isLoading">계속하기</span>
+          <svg
+            v-else
+            class="animate-spin h-5 w-5 text-white"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              class="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              stroke-width="4"
+            ></circle>
+            <path
+              class="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+            ></path>
+          </svg>
         </button>
       </form>
 
@@ -94,6 +123,7 @@
 
 <script lang="ts" setup>
 import { ref, watch } from 'vue' // ref와 watch를 import 합니다.
+import { useRouter } from 'vue-router'
 import { useForm, useField } from 'vee-validate'
 import * as yup from 'yup'
 
@@ -102,10 +132,9 @@ import type { ILoginPayload } from '@/types/api'
 
 // 1) 스키마 정의 (동일)
 const schema = yup.object({
-  email: yup.string().required('Email is required').email('Invalid email address'),
-  password: yup.string().required('Password is required'),
+  email: yup.string().required('이메일을 입력해주세요.').email('올바른 이메일 형식이 아닙니다.'),
+  password: yup.string().required('비밀번호를 입력해주세요.'),
 })
-
 // 2) useForm으로 전체 컨텍스트 생성 (동일)
 const { handleSubmit } = useForm<ILoginPayload>({
   validationSchema: schema,
@@ -115,27 +144,29 @@ const { handleSubmit } = useForm<ILoginPayload>({
 const { value: email, errorMessage: emailError } = useField<string>('email')
 const { value: password, errorMessage: passwordError } = useField<string>('password')
 
-// 👇 [추가] 서버로부터 받은 로그인 에러 메시지를 저장할 ref
-const loginError = ref<string | null>(null)
-
 const authStore = useAuthStore()
-// 👇 [수정] onSubmit 함수를 try...catch로 감싸 에러를 처리합니다.
+const router = useRouter()
+const loginError = ref<string | null>(null)
+const isLoading = ref(false) // 로딩 상태 ref 추가
+
+// onSubmit 함수 로직 개선 ---
 const onSubmit = handleSubmit(async (values) => {
-  // 에러 메시지 초기화
   loginError.value = null
+  isLoading.value = true // 로딩 시작
+
   try {
     await authStore.login(values)
-    alert('Login successful! Welcome back.')
-    // 실제 서비스에서는 보통 alert 대신 라우터로 메인 페이지로 이동시킵니다.
-    // router.push('/')
-  } catch (error) {
-    // 로그인 실패 시 에러 메시지 설정
-    loginError.value = '이메일 또는 비밀번호를 확인해주세요.'
-    console.error(error) // 실제 에러 내용 확인용
+    router.push('/') // 로그인 성공 시 홈으로 이동
+  } catch (error: any) {
+    // 서버가 구체적인 에러 메시지를 주면 그것을 사용, 아니면 기본 메시지 사용
+    loginError.value = error.response?.data?.detail || '이메일 또는 비밀번호를 확인해주세요.'
+    console.error('로그인 실패:', error)
+  } finally {
+    isLoading.value = false // 로딩 종료 (성공/실패 무관)
   }
 })
 
-// 👇 [추가] 사용자가 이메일이나 비밀번호를 다시 입력하면 에러 메시지를 지웁니다.
+// --- 수정: watch 로직은 그대로 유지 (좋은 기능!) ---
 watch([email, password], () => {
   if (loginError.value) {
     loginError.value = null
