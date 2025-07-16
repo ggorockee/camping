@@ -1,27 +1,16 @@
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, watch, onUnmounted } from 'vue' // onUnmounted 추가
+import { ref, reactive, computed, onMounted, watch, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import apiClient from '@/api/index'
 import type { IAmenity, ISite, IPricingRule, IImageFile } from '@/types/api'
 
-// --- 2. 상수 및 기본 데이터 ---
+// --- 1. 상태 관리 ---
 const router = useRouter()
-const weekDays = [
-  { label: '일', val: '0' },
-  { label: '월', val: '1' },
-  { label: '화', val: '2' },
-  { label: '수', val: '3' },
-  { label: '목', val: '4' },
-  { label: '금', val: '5' },
-  { label: '토', val: '6' },
-]
-
-// --- 3. 반응형 상태 (Reactive State) ---
 const campsiteData = reactive({
   name: '',
   address: '',
   description: '',
-  price: null,
+  price: null as number | null,
   contact_number: '',
   check_in: '',
   check_out: '',
@@ -38,19 +27,34 @@ const pricingRules = ref<IPricingRule[]>([])
 const allAmenities = ref<IAmenity[]>([])
 const selectedAmenities = ref<number[]>([])
 const images = ref<IImageFile[]>([])
-const isLoading = ref(false)
+const isLoading = ref(false) // 전체 제출 로딩
+const isUploading = ref(false) // 이미지 업로드 중
 const errorMessage = ref('')
 const dateError = ref('')
-
-const isUploading = ref(false)
-const uploadProgress = ref(0)
 const showSuccessToast = ref(false)
 const successMessage = ref('')
-
+const uploadProgress = ref(0)
 const totalImagesToUpload = ref(0)
 const uploadedImageCount = ref(0)
+const weekDays = [
+  { label: '일', val: '0' },
+  { label: '월', val: '1' },
+  { label: '화', val: '2' },
+  { label: '수', val: '3' },
+  { label: '목', val: '4' },
+  { label: '금', val: '5' },
+  { label: '토', val: '6' },
+]
 
-// uploadedImageCount의 변화를 감시하여 uploadProgress를 계산
+// --- 2. Computed 및 Watchers ---
+const isFormValid = computed(() => {
+  return (
+    campsiteData.name.trim() !== '' &&
+    campsiteData.address.trim() !== '' &&
+    images.value.length >= 1
+  )
+})
+
 watch(uploadedImageCount, (currentCount) => {
   if (totalImagesToUpload.value > 0) {
     uploadProgress.value = Math.round((currentCount / totalImagesToUpload.value) * 100)
@@ -59,32 +63,24 @@ watch(uploadedImageCount, (currentCount) => {
   }
 })
 
-// 👇 [수정] isUploading 상태를 감시하여 body 스크롤을 제어합니다.
 watch(isUploading, (isUploadingNow) => {
-  if (isUploadingNow) {
-    // 오버레이가 나타날 때 body 스크롤을 막습니다.
-    document.body.style.overflow = 'hidden'
-  } else {
-    // 오버레이가 사라질 때 body 스크롤을 복구합니다.
-    document.body.style.overflow = ''
-  }
+  document.body.style.overflow = isUploadingNow ? 'hidden' : ''
 })
 
-// 👇 [추가] 컴포넌트가 언마운트될 때(페이지 이동 등) body 스타일을 확실히 복구합니다.
 onUnmounted(() => {
   document.body.style.overflow = ''
 })
 
-const fetchAmenities = async () => {
+// --- 3. 함수 ---
+onMounted(async () => {
   try {
     const response = await apiClient.get<IAmenity[]>('/amenities/')
     allAmenities.value = response.data
   } catch (error) {
     console.error('편의시설 목록 로딩 실패:', error)
   }
-}
+})
 
-// 동적 리스트 관리
 const addSite = () =>
   sites.value.push({ id: Date.now(), name: '', camp_type: '오토캠핑', base_price: '0' })
 const removeSite = (index: number) => sites.value.splice(index, 1)
@@ -99,8 +95,8 @@ const addRule = () =>
   })
 const removeRule = (index: number) => pricingRules.value.splice(index, 1)
 
-// 파일 핸들링
-const addFiles = (files: FileList) => {
+const addFiles = (files: FileList | null) => {
+  if (!files) return
   Array.from(files).forEach((file) => {
     const reader = new FileReader()
     reader.onload = (e) => {
@@ -115,87 +111,54 @@ const addFiles = (files: FileList) => {
     reader.readAsDataURL(file)
   })
 }
-const handleFileSelect = (event: Event) => addFiles((event.target as HTMLInputElement).files!)
-
-// 유효성 검사
-const isFormValid = computed(() => {
-  return (
-    campsiteData.name.trim() !== '' &&
-    campsiteData.address.trim() !== '' &&
-    images.value.length >= 1
-  )
-})
+const handleFileSelect = (event: Event) => addFiles((event.target as HTMLInputElement).files)
 
 const validateDates = () => {
   if (campsiteData.check_in && campsiteData.check_out) {
     const checkInDate = new Date(campsiteData.check_in)
     const checkOutDate = new Date(campsiteData.check_out)
-
-    if (checkOutDate < checkInDate) {
-      dateError.value = '체크아웃 날짜는 체크인 날짜보다 빠를 수 없습니다.'
-    } else {
-      dateError.value = ''
-    }
+    dateError.value =
+      checkOutDate < checkInDate ? '체크아웃 날짜는 체크인 날짜보다 빠를 수 없습니다.' : ''
   }
 }
 
-// 폼 제출 로직
-const createCampsite = async () => {
+async function createCampsite() {
   if (!isFormValid.value) {
     errorMessage.value = '캠핑장 이름, 주소, 그리고 최소 1개 이상의 이미지는 필수입니다.'
     return
   }
+
   errorMessage.value = ''
   isLoading.value = true
   isUploading.value = true
 
-  uploadProgress.value = 0
-  const pendingImages = images.value.filter((img) => img.status === 'pending')
-  totalImagesToUpload.value = pendingImages.length
-  uploadedImageCount.value = 0
-
   try {
-    const token = localStorage.getItem('accessToken')
-    if (!token) throw new Error('인증 토큰이 없습니다. 로그인 후 이용해주세요.')
+    const pendingImages = images.value.filter((img) => img.status === 'pending')
+    totalImagesToUpload.value = pendingImages.length
+    uploadedImageCount.value = 0
+    let uploadedImageIds: string[] = []
 
-    const urlPromises = pendingImages.map(() =>
-      apiClient
-        .post<{
-          id: string
-          uploadURL: string
-        }>('/campsites/images/upload-url/', {}, { headers: { Authorization: `Bearer ${token}` } })
-        .then((res) => res.data),
-    )
-    const urlResults = await Promise.all(urlPromises)
-
-    const uploadPromises = pendingImages.map((image, index) => {
-      image.status = 'uploading'
-      const formData = new FormData()
-      formData.append('file', image.file)
-
-      return fetch(urlResults[index].uploadURL, { method: 'POST', body: formData })
-        .then((res) => {
-          if (res.ok) {
-            image.status = 'success'
-            image.progress = 100
-            image.cloudflareId = urlResults[index].id
-            uploadedImageCount.value++
-          } else {
-            image.status = 'error'
-            throw new Error(`'${image.file.name}' 이미지 업로드 실패`)
-          }
-        })
-        .catch((err) => {
-          image.status = 'error'
-          throw err
-        })
-    })
-    await Promise.all(uploadPromises)
-
-    if (images.value.some((img) => img.status === 'error')) {
-      throw new Error(
-        '일부 이미지 업로드에 실패했습니다. 실패한 이미지를 삭제 후 다시 시도해주세요.',
+    if (pendingImages.length > 0) {
+      const urlPromises = pendingImages.map(() =>
+        apiClient
+          .post<{ id: string; uploadURL: string }>('/campsites/images/upload-url/')
+          .then((res) => res.data),
       )
+      const urlResults = await Promise.all(urlPromises)
+
+      const uploadPromises = urlResults.map((result, index) => {
+        const formData = new FormData()
+        formData.append('file', pendingImages[index].file)
+        return fetch(result.uploadURL, { method: 'POST', body: formData }).then((res) => {
+          if (!res.ok) throw new Error(`'${pendingImages[index].file.name}' 업로드 실패`)
+
+          // ⭐️ [핵심 수정] 이 부분이 누락되었습니다! 각 이미지 업로드 성공 시 카운터를 증가시킵니다.
+          uploadedImageCount.value++
+
+          return result.id
+        })
+      })
+      uploadedImageIds = await Promise.all(uploadPromises)
     }
 
     const finalPayload = {
@@ -207,34 +170,37 @@ const createCampsite = async () => {
         ...r,
         day_of_week: r.day_of_week.join(','),
       })),
-      image_ids: images.value.map((img) => img.cloudflareId).filter((id) => id),
+      image_ids: uploadedImageIds,
     }
 
-    await apiClient.post('/campsites/', finalPayload, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    const response = await apiClient.post<{ id: number }>('/campsites/', finalPayload)
+    const newCampsiteId = response.data.id
 
-    isUploading.value = false // 성공 시에도 오버레이 숨김 처리
-    successMessage.value = '🎉 캠핑장이 성공적으로 등록되었습니다!'
-    showSuccessToast.value = true
+    if (!newCampsiteId) {
+      throw new Error('서버 응답에 생성된 캠핑장 ID가 없습니다.')
+    }
+
+    isUploading.value = false // 업로드 오버레이 숨김
+    successMessage.value = `🎉 '${campsiteData.name}' 캠핑장이 성공적으로 등록되었습니다!`
+    showSuccessToast.value = true // 성공 토스트 표시
+
+    // 1.5초 후 토스트를 숨기고 상세 페이지로 이동
     setTimeout(() => {
-      router.push({ name: 'home' })
-    }, 2000)
-  } catch (error: unknown) {
-    if (error instanceof Error) {
-      errorMessage.value = error.message
-    } else {
-      errorMessage.value = '알 수 없는 오류가 발생했습니다.'
-    }
-    isUploading.value = false // 에러 시에도 오버레이 숨김 처리
+      showSuccessToast.value = false
+      router.push({ name: 'campsite-detail', params: { id: newCampsiteId } })
+    }, 1500)
+  } catch (error: any) {
+    console.error('캠핑장 생성 실패:', error)
+    errorMessage.value =
+      error.response?.data?.detail || error.message || '알 수 없는 오류가 발생했습니다.'
   } finally {
+    // 최종 로딩 상태는 catch 블록 이후, setTimeout과 관계없이 바로 해제
     isLoading.value = false
+    // isUploading은 성공/실패 시점에 맞춰 제어되므로 여기서 false로 설정
+    isUploading.value = false
   }
 }
-
-onMounted(fetchAmenities)
 </script>
-
 <template>
   <div class="bg-gray-50 font-sans">
     <div
@@ -243,9 +209,11 @@ onMounted(fetchAmenities)
     >
       <div class="w-full max-w-md text-center">
         <h3 class="text-2xl font-bold text-gray-800 mb-4">이미지 업로드 중...</h3>
-        <p class="text-gray-600 mb-6">잠시만 기다려 주세요.</p>
+        <p class="text-gray-600 mb-6">
+          잠시만 기다려 주세요. ({{ uploadedImageCount }} / {{ totalImagesToUpload }})
+        </p>
 
-        <div class="w-full bg-gray-200 rounded-full h-6 overflow-hidden">
+        <div class="w-full bg-gray-200 rounded-full h-6 overflow-hidden shadow-inner">
           <div
             class="bg-indigo-600 h-full rounded-full text-center text-white text-sm leading-6 transition-all duration-500"
             :style="{ width: uploadProgress + '%' }"
